@@ -20,27 +20,38 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as AuthenticatedVerificationRouteImport } from './routes/_authenticated/verification'
+import { Route as AuthenticatedSubscriptionRouteImport } from './routes/_authenticated/subscription'
+import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMyAdsRouteImport } from './routes/_authenticated/my-ads'
 import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
 import { Route as AuthenticatedFavouritesRouteImport } from './routes/_authenticated/favourites'
 import { Route as AuthenticatedEditProfileRouteImport } from './routes/_authenticated/edit-profile'
+import { Route as AuthenticatedBusinessRouteImport } from './routes/_authenticated/business'
 import { Route as AuthenticatedBannerRequestsRouteImport } from './routes/_authenticated/banner-requests'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedChatsIdRouteImport } from './routes/_authenticated/chats.$id'
+import { Route as AuthenticatedAdminVerificationRouteImport } from './routes/_authenticated/admin.verification'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin.settings'
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin.reports'
+import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin.plans'
+import { Route as AuthenticatedAdminMonetizationRouteImport } from './routes/_authenticated/admin.monetization'
 import { Route as AuthenticatedAdminListingsRouteImport } from './routes/_authenticated/admin.listings'
+import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin.legal'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated/admin.feedback'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
 import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin.banners'
 import { Route as AuthenticatedAdminBannerRequestsRouteImport } from './routes/_authenticated/admin.banner-requests'
 import { Route as AuthenticatedAdminAppealsRouteImport } from './routes/_authenticated/admin.appeals'
+import { Route as AuthenticatedAdminAdsRouteImport } from './routes/_authenticated/admin.ads'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -96,6 +107,23 @@ const CategorySlugRoute = CategorySlugRouteImport.update({
   path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedVerificationRoute =
+  AuthenticatedVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSubscriptionRoute =
+  AuthenticatedSubscriptionRouteImport.update({
+    id: '/subscription',
+    path: '/subscription',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedStoreRoute = AuthenticatedStoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -109,6 +137,11 @@ const AuthenticatedSellRoute = AuthenticatedSellRouteImport.update({
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedNotificationsRoute =
@@ -138,6 +171,11 @@ const AuthenticatedEditProfileRoute =
     path: '/edit-profile',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedBusinessRoute = AuthenticatedBusinessRouteImport.update({
+  id: '/business',
+  path: '/business',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedBannerRequestsRoute =
   AuthenticatedBannerRequestsRouteImport.update({
     id: '/banner-requests',
@@ -164,15 +202,38 @@ const AuthenticatedChatsIdRoute = AuthenticatedChatsIdRouteImport.update({
   path: '/chats/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAdminVerificationRoute =
+  AuthenticatedAdminVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminReportsRoute =
   AuthenticatedAdminReportsRouteImport.update({
     id: '/reports',
     path: '/reports',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminMonetizationRoute =
+  AuthenticatedAdminMonetizationRouteImport.update({
+    id: '/monetization',
+    path: '/monetization',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminListingsRoute =
@@ -181,6 +242,11 @@ const AuthenticatedAdminListingsRoute =
     path: '/listings',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminLegalRoute = AuthenticatedAdminLegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminFeedbackRoute =
   AuthenticatedAdminFeedbackRouteImport.update({
     id: '/feedback',
@@ -211,6 +277,11 @@ const AuthenticatedAdminAppealsRoute =
     path: '/appeals',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAdsRoute = AuthenticatedAdminAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -223,24 +294,35 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/banner-requests': typeof AuthenticatedBannerRequestsRoute
+  '/business': typeof AuthenticatedBusinessRoute
   '/edit-profile': typeof AuthenticatedEditProfileRoute
   '/favourites': typeof AuthenticatedFavouritesRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/my-ads': typeof AuthenticatedMyAdsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/sell': typeof AuthenticatedSellRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/store': typeof AuthenticatedStoreRoute
+  '/subscription': typeof AuthenticatedSubscriptionRoute
+  '/verification': typeof AuthenticatedVerificationRoute
   '/category/$slug': typeof CategorySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/admin/appeals': typeof AuthenticatedAdminAppealsRoute
   '/admin/banner-requests': typeof AuthenticatedAdminBannerRequestsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
+  '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/listings': typeof AuthenticatedAdminListingsRoute
+  '/admin/monetization': typeof AuthenticatedAdminMonetizationRoute
+  '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/admin/verification': typeof AuthenticatedAdminVerificationRoute
   '/chats/$id': typeof AuthenticatedChatsIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/chats/': typeof AuthenticatedChatsIndexRoute
@@ -255,24 +337,35 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/banner-requests': typeof AuthenticatedBannerRequestsRoute
+  '/business': typeof AuthenticatedBusinessRoute
   '/edit-profile': typeof AuthenticatedEditProfileRoute
   '/favourites': typeof AuthenticatedFavouritesRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
   '/my-ads': typeof AuthenticatedMyAdsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/payments': typeof AuthenticatedPaymentsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/sell': typeof AuthenticatedSellRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/store': typeof AuthenticatedStoreRoute
+  '/subscription': typeof AuthenticatedSubscriptionRoute
+  '/verification': typeof AuthenticatedVerificationRoute
   '/category/$slug': typeof CategorySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/admin/appeals': typeof AuthenticatedAdminAppealsRoute
   '/admin/banner-requests': typeof AuthenticatedAdminBannerRequestsRoute
   '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
+  '/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/admin/listings': typeof AuthenticatedAdminListingsRoute
+  '/admin/monetization': typeof AuthenticatedAdminMonetizationRoute
+  '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/admin/verification': typeof AuthenticatedAdminVerificationRoute
   '/chats/$id': typeof AuthenticatedChatsIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
@@ -290,24 +383,35 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/banner-requests': typeof AuthenticatedBannerRequestsRoute
+  '/_authenticated/business': typeof AuthenticatedBusinessRoute
   '/_authenticated/edit-profile': typeof AuthenticatedEditProfileRoute
   '/_authenticated/favourites': typeof AuthenticatedFavouritesRoute
   '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
   '/_authenticated/my-ads': typeof AuthenticatedMyAdsRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/store': typeof AuthenticatedStoreRoute
+  '/_authenticated/subscription': typeof AuthenticatedSubscriptionRoute
+  '/_authenticated/verification': typeof AuthenticatedVerificationRoute
   '/category/$slug': typeof CategorySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/_authenticated/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/_authenticated/admin/appeals': typeof AuthenticatedAdminAppealsRoute
   '/_authenticated/admin/banner-requests': typeof AuthenticatedAdminBannerRequestsRoute
   '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
+  '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
   '/_authenticated/admin/listings': typeof AuthenticatedAdminListingsRoute
+  '/_authenticated/admin/monetization': typeof AuthenticatedAdminMonetizationRoute
+  '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/_authenticated/admin/verification': typeof AuthenticatedAdminVerificationRoute
   '/_authenticated/chats/$id': typeof AuthenticatedChatsIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
@@ -325,24 +429,35 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin'
     | '/banner-requests'
+    | '/business'
     | '/edit-profile'
     | '/favourites'
     | '/feedback'
     | '/my-ads'
     | '/notifications'
+    | '/payments'
     | '/profile'
     | '/sell'
     | '/settings'
+    | '/store'
+    | '/subscription'
+    | '/verification'
     | '/category/$slug'
     | '/product/$id'
+    | '/admin/ads'
     | '/admin/appeals'
     | '/admin/banner-requests'
     | '/admin/banners'
     | '/admin/categories'
     | '/admin/feedback'
+    | '/admin/legal'
     | '/admin/listings'
+    | '/admin/monetization'
+    | '/admin/plans'
     | '/admin/reports'
+    | '/admin/settings'
     | '/admin/users'
+    | '/admin/verification'
     | '/chats/$id'
     | '/admin/'
     | '/chats/'
@@ -357,24 +472,35 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/banner-requests'
+    | '/business'
     | '/edit-profile'
     | '/favourites'
     | '/feedback'
     | '/my-ads'
     | '/notifications'
+    | '/payments'
     | '/profile'
     | '/sell'
     | '/settings'
+    | '/store'
+    | '/subscription'
+    | '/verification'
     | '/category/$slug'
     | '/product/$id'
+    | '/admin/ads'
     | '/admin/appeals'
     | '/admin/banner-requests'
     | '/admin/banners'
     | '/admin/categories'
     | '/admin/feedback'
+    | '/admin/legal'
     | '/admin/listings'
+    | '/admin/monetization'
+    | '/admin/plans'
     | '/admin/reports'
+    | '/admin/settings'
     | '/admin/users'
+    | '/admin/verification'
     | '/chats/$id'
     | '/admin'
     | '/chats'
@@ -391,24 +517,35 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/admin'
     | '/_authenticated/banner-requests'
+    | '/_authenticated/business'
     | '/_authenticated/edit-profile'
     | '/_authenticated/favourites'
     | '/_authenticated/feedback'
     | '/_authenticated/my-ads'
     | '/_authenticated/notifications'
+    | '/_authenticated/payments'
     | '/_authenticated/profile'
     | '/_authenticated/sell'
     | '/_authenticated/settings'
+    | '/_authenticated/store'
+    | '/_authenticated/subscription'
+    | '/_authenticated/verification'
     | '/category/$slug'
     | '/product/$id'
+    | '/_authenticated/admin/ads'
     | '/_authenticated/admin/appeals'
     | '/_authenticated/admin/banner-requests'
     | '/_authenticated/admin/banners'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/feedback'
+    | '/_authenticated/admin/legal'
     | '/_authenticated/admin/listings'
+    | '/_authenticated/admin/monetization'
+    | '/_authenticated/admin/plans'
     | '/_authenticated/admin/reports'
+    | '/_authenticated/admin/settings'
     | '/_authenticated/admin/users'
+    | '/_authenticated/admin/verification'
     | '/_authenticated/chats/$id'
     | '/_authenticated/admin/'
     | '/_authenticated/chats/'
@@ -507,6 +644,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/verification': {
+      id: '/_authenticated/verification'
+      path: '/verification'
+      fullPath: '/verification'
+      preLoaderRoute: typeof AuthenticatedVerificationRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/subscription': {
+      id: '/_authenticated/subscription'
+      path: '/subscription'
+      fullPath: '/subscription'
+      preLoaderRoute: typeof AuthenticatedSubscriptionRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/store': {
+      id: '/_authenticated/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof AuthenticatedStoreRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -526,6 +684,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/payments': {
+      id: '/_authenticated/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof AuthenticatedPaymentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/notifications': {
@@ -563,6 +728,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEditProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/business': {
+      id: '/_authenticated/business'
+      path: '/business'
+      fullPath: '/business'
+      preLoaderRoute: typeof AuthenticatedBusinessRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/banner-requests': {
       id: '/_authenticated/banner-requests'
       path: '/banner-requests'
@@ -598,11 +770,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatsIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/verification': {
+      id: '/_authenticated/admin/verification'
+      path: '/verification'
+      fullPath: '/admin/verification'
+      preLoaderRoute: typeof AuthenticatedAdminVerificationRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
       path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/settings': {
+      id: '/_authenticated/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/reports': {
@@ -612,11 +798,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/plans': {
+      id: '/_authenticated/admin/plans'
+      path: '/plans'
+      fullPath: '/admin/plans'
+      preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/monetization': {
+      id: '/_authenticated/admin/monetization'
+      path: '/monetization'
+      fullPath: '/admin/monetization'
+      preLoaderRoute: typeof AuthenticatedAdminMonetizationRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/listings': {
       id: '/_authenticated/admin/listings'
       path: '/listings'
       fullPath: '/admin/listings'
       preLoaderRoute: typeof AuthenticatedAdminListingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/legal': {
+      id: '/_authenticated/admin/legal'
+      path: '/legal'
+      fullPath: '/admin/legal'
+      preLoaderRoute: typeof AuthenticatedAdminLegalRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/feedback': {
@@ -654,30 +861,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAppealsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/ads': {
+      id: '/_authenticated/admin/ads'
+      path: '/ads'
+      fullPath: '/admin/ads'
+      preLoaderRoute: typeof AuthenticatedAdminAdsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAdsRoute: typeof AuthenticatedAdminAdsRoute
   AuthenticatedAdminAppealsRoute: typeof AuthenticatedAdminAppealsRoute
   AuthenticatedAdminBannerRequestsRoute: typeof AuthenticatedAdminBannerRequestsRoute
   AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
+  AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
   AuthenticatedAdminListingsRoute: typeof AuthenticatedAdminListingsRoute
+  AuthenticatedAdminMonetizationRoute: typeof AuthenticatedAdminMonetizationRoute
+  AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
   AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminVerificationRoute: typeof AuthenticatedAdminVerificationRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAdsRoute: AuthenticatedAdminAdsRoute,
   AuthenticatedAdminAppealsRoute: AuthenticatedAdminAppealsRoute,
   AuthenticatedAdminBannerRequestsRoute: AuthenticatedAdminBannerRequestsRoute,
   AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
+  AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
   AuthenticatedAdminListingsRoute: AuthenticatedAdminListingsRoute,
+  AuthenticatedAdminMonetizationRoute: AuthenticatedAdminMonetizationRoute,
+  AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
   AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
+  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+  AuthenticatedAdminVerificationRoute: AuthenticatedAdminVerificationRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
@@ -687,14 +913,19 @@ const AuthenticatedAdminRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedBannerRequestsRoute: typeof AuthenticatedBannerRequestsRoute
+  AuthenticatedBusinessRoute: typeof AuthenticatedBusinessRoute
   AuthenticatedEditProfileRoute: typeof AuthenticatedEditProfileRoute
   AuthenticatedFavouritesRoute: typeof AuthenticatedFavouritesRoute
   AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
   AuthenticatedMyAdsRoute: typeof AuthenticatedMyAdsRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
+  AuthenticatedSubscriptionRoute: typeof AuthenticatedSubscriptionRoute
+  AuthenticatedVerificationRoute: typeof AuthenticatedVerificationRoute
   AuthenticatedChatsIdRoute: typeof AuthenticatedChatsIdRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
 }
@@ -702,14 +933,19 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedBannerRequestsRoute: AuthenticatedBannerRequestsRoute,
+  AuthenticatedBusinessRoute: AuthenticatedBusinessRoute,
   AuthenticatedEditProfileRoute: AuthenticatedEditProfileRoute,
   AuthenticatedFavouritesRoute: AuthenticatedFavouritesRoute,
   AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
   AuthenticatedMyAdsRoute: AuthenticatedMyAdsRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedStoreRoute: AuthenticatedStoreRoute,
+  AuthenticatedSubscriptionRoute: AuthenticatedSubscriptionRoute,
+  AuthenticatedVerificationRoute: AuthenticatedVerificationRoute,
   AuthenticatedChatsIdRoute: AuthenticatedChatsIdRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
 }

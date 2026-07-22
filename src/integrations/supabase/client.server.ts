@@ -30,17 +30,18 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function createSupabaseAdminClient() {
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  let SUPABASE_URL = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY'] : []),
-    ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+  if (SUPABASE_URL.includes('supabase.com/dashboard/project/')) {
+    const projectId = SUPABASE_URL.split('supabase.com/dashboard/project/')[1]?.split('/')[0]?.trim();
+    if (projectId) {
+      SUPABASE_URL = `https://${projectId}.supabase.co`;
+    }
+  }
+
+  if (SUPABASE_URL === 'https://placeholder.supabase.co' || SUPABASE_SERVICE_ROLE_KEY === 'placeholder-service-role-key') {
+    console.warn('[Supabase Admin] Missing Supabase environment variable(s). Using fallback placeholder.');
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
