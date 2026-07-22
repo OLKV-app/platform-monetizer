@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS hide_contact BOOLEAN NOT NULL DEFAULT false;
