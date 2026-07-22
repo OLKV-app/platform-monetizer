@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { auth, onAuthStateChanged, firebaseSignOut, type FirebaseUser } from "@/lib/firebase";
 import { supabase } from "@/integrations/supabase/client";
+// Import your server function here! Adjust the path as needed.
+import { bridgeFirebaseSession } from "@/path/to/your/firebase-bridge.functions"; 
 
 export interface AuthUser {
-  id: string;
-  uid: string;
+  id: string; // This will now be the Supabase UUID
+  uid: string; // This stays as the Firebase UID
   email: string | null;
   phone: string | null;
   displayName: string | null;
@@ -37,23 +39,57 @@ const AuthContext = createContext<Ctx>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [supabaseUuid, setSupabaseUuid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [banReason, setBanReason] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (fUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
       setFirebaseUser(fUser);
+
+      if (fUser) {
+        try {
+          // 1. Get Firebase Token
+          const idToken = await fUser.getIdToken();
+
+          // 2. Call your Server Bridge function
+          const bridgeResult = await bridgeFirebaseSession({
+            data: { idToken, fullName: fUser.displayName || undefined },
+          });
+
+          // 3. Verify OTP to establish Supabase session
+          if (bridgeResult?.tokenHash) {
+            const { data, error } = await supabase.auth.verifyOtp({
+              type: 'magiclink',
+              token_hash: bridgeResult.tokenHash,
+            });
+
+            if (error) {
+              console.error("Supabase OTP verification failed:", error);
+            } else if (data.user) {
+              // 4. Save the Supabase UUID to state!
+              setSupabaseUuid(data.user.id);
+            }
+          }
+        } catch (err) {
+          console.error("Bridge session failed:", err);
+        }
+      } else {
+        // User logged out of Firebase
+        setSupabaseUuid(null);
+        await supabase.auth.signOut();
+      }
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  const normalizedUser: AuthUser | null = firebaseUser
+  const normalizedUser: AuthUser | null = (firebaseUser && supabaseUuid)
     ? {
-        id: firebaseUser.uid,
-        uid: firebaseUser.uid,
+        id: supabaseUuid, // <--- FIX: Use Supabase UUID for database queries
+        uid: firebaseUser.uid, // Keep Firebase UID if you need it for Firebase queries
         email: firebaseUser.email,
         phone: firebaseUser.phoneNumber,
         displayName: firebaseUser.displayName,
@@ -61,36 +97,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     : null;
 
-  async function loadStatus(uid: string) {
+  async function loadStatus(uuid: string) {
     try {
+      // Now 'uuid' is a proper UUID, so these queries will work!
       const [{ data: role }, { data: profile }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle(),
-        supabase.from("profiles").select("is_banned,ban_reason").eq("id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uuid).eq("role", "admin").maybeSingle(),
+        supabase.from("profiles").select("is_banned,ban_reason").eq("id", uuid).maybeSingle(),
       ]);
       setIsAdmin(!!role);
       setIsBanned(!!profile?.is_banned);
       setBanReason(profile?.ban_reason ?? null);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("Failed to load user status:", err);
     }
   }
 
   useEffect(() => {
-    if (!firebaseUser) {
+    if (!supabaseUuid) {
       setIsAdmin(false);
       setIsBanned(false);
       setBanReason(null);
       return;
     }
-    loadStatus(firebaseUser.uid);
-  }, [firebaseUser?.uid]);
+    loadStatus(supabaseUuid);
+  }, [supabaseUuid]);
 
   const refreshStatus = async () => {
-    if (firebaseUser) await loadStatus(firebaseUser.uid);
+    if (supabaseUuid) await loadStatus(supabaseUuid);
   };
 
   const signOut = async () => {
-    await firebaseSignOut(auth);
+    await supabase.auth.signOut(); // Sign out of Supabase
+    await firebaseSignOut(auth);   // Sign out of Firebase
   };
 
   return (
@@ -115,4 +153,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
-
