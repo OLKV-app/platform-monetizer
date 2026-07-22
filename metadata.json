@@ -1,0 +1,6 @@
+{
+  "name": "Lakshadweep Connect Market",
+  "description": "Marketplace platform connecting buyers and sellers across Lakshadweep islands",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
