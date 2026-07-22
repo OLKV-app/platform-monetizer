@@ -8,6 +8,7 @@ import { bridgeFirebaseSession } from "./firebase-bridge.functions";
 interface AuthUserLike {
   id: string;                 // Supabase user id (RLS uses this)
   email: string | null;
+  phone: string | null;
   user_metadata: Record<string, unknown>;
 }
 
@@ -108,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ? {
         id: session.user.id,
         email: session.user.email ?? firebaseUser?.email ?? null,
+        phone: session.user.phone ?? firebaseUser?.phoneNumber ?? null,
         user_metadata: session.user.user_metadata ?? {},
       }
     : null;
