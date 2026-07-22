@@ -14,7 +14,7 @@ export const Route = createFileRoute("/banned")({
 });
 
 function BannedPage() {
-  const { user, isBanned, banReason, loading } = useAuth();
+  const { user, isBanned, banReason, loading, signOut: doSignOut } = useAuth();
   const nav = useNavigate();
   const qc = useQueryClient();
   const [reason, setReason] = useState("");
@@ -44,7 +44,7 @@ function BannedPage() {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await doSignOut();
     nav({ to: "/auth", replace: true });
   }
 

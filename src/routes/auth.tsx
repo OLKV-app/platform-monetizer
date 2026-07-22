@@ -1,14 +1,21 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useLang } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  firebaseAuth,
+  googleProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
+} from "@/integrations/firebase/client";
 
 const searchSchema = z.object({ redirect: z.string().optional().catch(undefined) });
 export const Route = createFileRoute("/auth")({
@@ -20,7 +27,7 @@ function AuthPage() {
   const { t } = useLang();
   const nav = useNavigate();
   const { redirect } = Route.useSearch();
-  const goHome = () => nav({ to: (redirect as any) || "/" });
+  const goHome = () => nav({ to: (redirect as string | undefined) || "/" });
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,12 +37,10 @@ function AuthPage() {
           <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">{t("tagline")}</span>
         </Link>
         <Tabs defaultValue="email">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-1">
             <TabsTrigger value="email">Email</TabsTrigger>
-            <TabsTrigger value="phone">Phone OTP</TabsTrigger>
           </TabsList>
           <TabsContent value="email"><EmailAuth onSuccess={goHome} /></TabsContent>
-          <TabsContent value="phone"><PhoneAuth onSuccess={goHome} /></TabsContent>
         </Tabs>
 
         <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
@@ -44,7 +49,7 @@ function AuthPage() {
           <div className="h-px flex-1 bg-border" />
         </div>
 
-        <GoogleButton />
+        <GoogleButton onSuccess={goHome} />
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           By continuing you agree to OLKV's terms.
@@ -68,32 +73,28 @@ function EmailAuth({ onSuccess }: { onSuccess: () => void }) {
     setBusy(true);
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        await signInWithEmailAndPassword(firebaseAuth, email, password);
         toast.success("Welcome back!");
         onSuccess();
       } else if (mode === "signup") {
         if (!terms) throw new Error("Please accept the Terms of Service and Privacy Policy to continue.");
-        const { error } = await supabase.auth.signUp({
-          email, password,
-          options: {
-            data: { full_name: name, terms_accepted: "true" },
-            emailRedirectTo: window.location.origin,
-          },
-        });
-        if (error) throw error;
-        toast.success("Account created. Check your email if confirmation is required.");
+        const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+        if (name && cred.user) {
+          try { await updateProfile(cred.user, { displayName: name }); } catch {}
+        }
+        toast.success("Account created.");
         onSuccess();
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + "/reset-password",
+        await sendPasswordResetEmail(firebaseAuth, email, {
+          url: window.location.origin + "/reset-password",
+          handleCodeInApp: false,
         });
-        if (error) throw error;
         toast.success("Password reset email sent.");
         setMode("signin");
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Something went wrong");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      toast.error(msg.replace(/^Firebase:\s*/, ""));
     } finally {
       setBusy(false);
     }
@@ -146,71 +147,17 @@ function EmailAuth({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-function PhoneAuth({ onSuccess }: { onSuccess: () => void }) {
-  const [phone, setPhone] = useState("+91");
-  const [otp, setOtp] = useState("");
-  const [sent, setSent] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  async function sendOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({ phone });
-      if (error) throw error;
-      setSent(true);
-      toast.success("OTP sent");
-    } catch (err: any) {
-      toast.error(err.message ?? "Could not send OTP");
-    } finally { setBusy(false); }
-  }
-  async function verify(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const { error } = await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" });
-      if (error) throw error;
-      toast.success("Signed in");
-      onSuccess();
-    } catch (err: any) {
-      toast.error(err.message ?? "Invalid OTP");
-    } finally { setBusy(false); }
-  }
-  return (
-    <form onSubmit={sent ? verify : sendOtp} className="mt-4 space-y-3">
-      <div>
-        <Label htmlFor="phone">Phone (with country code)</Label>
-        <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919xxxxxxxxx" required />
-      </div>
-      {sent && (
-        <div>
-          <Label htmlFor="otp">Enter 6-digit code</Label>
-          <Input id="otp" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} required />
-        </div>
-      )}
-      <Button type="submit" className="w-full" disabled={busy}>
-        {busy ? "…" : sent ? "Verify OTP" : "Send OTP"}
-      </Button>
-      {sent && (
-        <button type="button" className="w-full text-xs text-muted-foreground" onClick={() => { setSent(false); setOtp(""); }}>
-          Use a different number
-        </button>
-      )}
-    </form>
-  );
-}
-
-function GoogleButton() {
+function GoogleButton({ onSuccess }: { onSuccess: () => void }) {
   const [busy, setBusy] = useState(false);
   async function go() {
     setBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-      if (result.error) { toast.error(result.error.message ?? "Google sign-in failed"); return; }
-      if (result.redirected) return;
-      window.location.href = "/";
-    } catch (err: any) {
-      toast.error(err.message ?? "Google sign-in failed");
+      await signInWithPopup(firebaseAuth, googleProvider);
+      toast.success("Signed in");
+      onSuccess();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Google sign-in failed";
+      toast.error(msg.replace(/^Firebase:\s*/, ""));
     } finally { setBusy(false); }
   }
   return (

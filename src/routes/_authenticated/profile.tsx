@@ -23,10 +23,11 @@ function Profile() {
     queryFn: async () => (await supabase.from("profiles").select("*").eq("id", user!.id).maybeSingle()).data,
   });
 
+  const { signOut: doSignOut } = useAuth();
   async function signOut() {
     await qc.cancelQueries();
     qc.clear();
-    await supabase.auth.signOut();
+    await doSignOut();
     toast.success("Signed out");
     nav({ to: "/", replace: true });
   }
