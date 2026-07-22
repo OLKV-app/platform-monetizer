@@ -44,7 +44,7 @@ function BannedPage() {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await doSignOut();
     nav({ to: "/auth", replace: true });
   }
 
