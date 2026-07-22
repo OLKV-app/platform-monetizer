@@ -1,21 +1,30 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
+import {
+  auth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithPopup,
+  googleProvider,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult,
+  updateProfile,
+} from "@/lib/firebase";
 import { useLang } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  firebaseAuth,
-  googleProvider,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  updateProfile,
-} from "@/integrations/firebase/client";
+
+declare global {
+  interface Window {
+    recaptchaVerifier?: RecaptchaVerifier;
+  }
+}
 
 const searchSchema = z.object({ redirect: z.string().optional().catch(undefined) });
 export const Route = createFileRoute("/auth")({
@@ -27,7 +36,7 @@ function AuthPage() {
   const { t } = useLang();
   const nav = useNavigate();
   const { redirect } = Route.useSearch();
-  const goHome = () => nav({ to: (redirect as string | undefined) || "/" });
+  const goHome = () => nav({ to: (redirect as any) || "/" });
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,10 +46,12 @@ function AuthPage() {
           <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">{t("tagline")}</span>
         </Link>
         <Tabs defaultValue="email">
-          <TabsList className="grid w-full grid-cols-1">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="email">Email</TabsTrigger>
+            <TabsTrigger value="phone">Phone OTP</TabsTrigger>
           </TabsList>
           <TabsContent value="email"><EmailAuth onSuccess={goHome} /></TabsContent>
+          <TabsContent value="phone"><PhoneAuth onSuccess={goHome} /></TabsContent>
         </Tabs>
 
         <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
@@ -73,28 +84,35 @@ function EmailAuth({ onSuccess }: { onSuccess: () => void }) {
     setBusy(true);
     try {
       if (mode === "signin") {
-        await signInWithEmailAndPassword(firebaseAuth, email, password);
+        await signInWithEmailAndPassword(auth, email, password);
         toast.success("Welcome back!");
         onSuccess();
       } else if (mode === "signup") {
         if (!terms) throw new Error("Please accept the Terms of Service and Privacy Policy to continue.");
-        const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-        if (name && cred.user) {
-          try { await updateProfile(cred.user, { displayName: name }); } catch {}
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        if (name && userCred.user) {
+          await updateProfile(userCred.user, { displayName: name });
         }
-        toast.success("Account created.");
+        toast.success("Account created successfully!");
         onSuccess();
       } else {
-        await sendPasswordResetEmail(firebaseAuth, email, {
-          url: window.location.origin + "/reset-password",
-          handleCodeInApp: false,
-        });
+        await sendPasswordResetEmail(auth, email);
         toast.success("Password reset email sent.");
         setMode("signin");
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Something went wrong";
-      toast.error(msg.replace(/^Firebase:\s*/, ""));
+    } catch (err: any) {
+      const code = err?.code || "";
+      let msg = err?.message || "Something went wrong";
+      if (code === "auth/email-already-in-use") {
+        msg = "That email address is already registered. Try signing in instead.";
+      } else if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        msg = "Invalid email or password. Please try again.";
+      } else if (code === "auth/user-not-found") {
+        msg = "No account found with this email.";
+      } else if (code === "auth/weak-password") {
+        msg = "Password should be at least 6 characters.";
+      }
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -147,18 +165,113 @@ function EmailAuth({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-function GoogleButton({ onSuccess }: { onSuccess: () => void }) {
+function PhoneAuth({ onSuccess }: { onSuccess: () => void }) {
+  const [phone, setPhone] = useState("+91");
+  const [otp, setOtp] = useState("");
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch {}
+        window.recaptchaVerifier = undefined;
+      }
+    };
+  }, []);
+
+  async function sendOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+          size: "invisible",
+        });
+      }
+      const confirmation = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+      setConfirmationResult(confirmation);
+      setSent(true);
+      toast.success("OTP sent to " + phone);
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (code === "auth/unauthorized-domain" || err?.message?.includes("unauthorized-domain")) {
+        toast.error(`Domain (${window.location.hostname}) is not authorized in Firebase Console > Authentication > Settings > Authorized Domains.`);
+      } else if (code === "auth/invalid-phone-number") {
+        toast.error("Invalid phone number format. Please include country code (e.g. +91...)");
+      } else {
+        toast.error(err.message ?? "Could not send OTP");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verify(e: React.FormEvent) {
+    e.preventDefault();
+    if (!confirmationResult) return;
+    setBusy(true);
+    try {
+      await confirmationResult.confirm(otp);
+      toast.success("Signed in successfully!");
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err.message ?? "Invalid OTP");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={sent ? verify : sendOtp} className="mt-4 space-y-3">
+      <div id="recaptcha-container"></div>
+      <div>
+        <Label htmlFor="phone">Phone (with country code)</Label>
+        <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+919xxxxxxxxx" required />
+      </div>
+      {sent && (
+        <div>
+          <Label htmlFor="otp">Enter 6-digit code</Label>
+          <Input id="otp" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} required />
+        </div>
+      )}
+      <Button type="submit" className="w-full" disabled={busy}>
+        {busy ? "…" : sent ? "Verify OTP" : "Send OTP"}
+      </Button>
+      {sent && (
+        <button type="button" className="w-full text-xs text-muted-foreground" onClick={() => { setSent(false); setOtp(""); setConfirmationResult(null); }}>
+          Use a different number
+        </button>
+      )}
+    </form>
+  );
+}
+
+function GoogleButton({ onSuccess }: { onSuccess?: () => void }) {
   const [busy, setBusy] = useState(false);
   async function go() {
     setBusy(true);
     try {
-      await signInWithPopup(firebaseAuth, googleProvider);
-      toast.success("Signed in");
-      onSuccess();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Google sign-in failed";
-      toast.error(msg.replace(/^Firebase:\s*/, ""));
-    } finally { setBusy(false); }
+      await signInWithPopup(auth, googleProvider);
+      toast.success("Signed in with Google");
+      if (onSuccess) onSuccess();
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (code === "auth/unauthorized-domain" || err?.message?.includes("unauthorized-domain")) {
+        toast.error(`Domain (${window.location.hostname}) is not in Firebase Authorized Domains. Add it in Firebase Console > Authentication > Settings. Email & Password sign-in works without domain restriction!`, {
+          duration: 8000,
+        });
+      } else if (code === "auth/popup-closed-by-user") {
+        toast.info("Google sign-in popup was closed.");
+      } else {
+        toast.error(err.message ?? "Google sign-in failed");
+      }
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <Button variant="outline" onClick={go} disabled={busy} className="w-full gap-2">
@@ -167,3 +280,4 @@ function GoogleButton({ onSuccess }: { onSuccess: () => void }) {
     </Button>
   );
 }
+

@@ -12,7 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 export const Route = createFileRoute("/_authenticated/profile")({ component: Profile });
 
 function Profile() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, signOut: authSignOut } = useAuth();
   const { t } = useLang();
   const nav = useNavigate();
   const qc = useQueryClient();
@@ -23,11 +23,10 @@ function Profile() {
     queryFn: async () => (await supabase.from("profiles").select("*").eq("id", user!.id).maybeSingle()).data,
   });
 
-  const { signOut: doSignOut } = useAuth();
   async function signOut() {
     await qc.cancelQueries();
     qc.clear();
-    await doSignOut();
+    await authSignOut();
     toast.success("Signed out");
     nav({ to: "/", replace: true });
   }
