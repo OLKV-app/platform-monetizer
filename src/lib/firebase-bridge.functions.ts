@@ -4,10 +4,51 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const FIREBASE_PROJECT_ID = "olkv-a8199";
+const FIREBASE_PROJECT_ID = "project-6e03e9ed-73b5-4bf4-816";
 const FIREBASE_ISSUER = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
 const FIREBASE_JWKS_URL =
   "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+
+type FirebasePayload = {
+  sub?: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
+  picture?: string;
+};
+
+async function findSupabaseUserByEmail(
+  supabaseAdmin: any,
+  email: string,
+): Promise<string | null> {
+  const pageSize = 200;
+  let page = 1;
+
+  while (page <= 20) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage: pageSize,
+    });
+
+    if (error) throw error;
+
+    const match = data.users.find(
+      (u: any) => (u.email ?? "").toLowerCase() === email.toLowerCase(),
+    );
+
+    if (match) {
+      return match.id;
+    }
+
+    if (!data.users || data.users.length < pageSize) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return null;
+}
 
 export const bridgeFirebaseSession = createServerFn({ method: "POST" })
   .inputValidator((input) =>
@@ -21,20 +62,23 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { jwtVerify, createRemoteJWKSet } = await import("jose");
     const JWKS = createRemoteJWKSet(new URL(FIREBASE_JWKS_URL));
+
     const { payload } = await jwtVerify(data.idToken, JWKS, {
       issuer: FIREBASE_ISSUER,
       audience: FIREBASE_PROJECT_ID,
     });
 
-    const firebaseUid = String(payload.sub ?? "");
-    const email = String(payload.email ?? "");
-    const emailVerified = Boolean((payload as { email_verified?: boolean }).email_verified);
+    const claims = payload as unknown as FirebasePayload;
+
+    const firebaseUid = String(claims.sub ?? "");
+    const email = String(claims.email ?? "");
+    const emailVerified = Boolean(claims.email_verified);
     const name =
       data.fullName ||
-      (payload as { name?: string }).name ||
+      claims.name ||
       email.split("@")[0] ||
       "User";
-    const picture = (payload as { picture?: string }).picture;
+    const picture = claims.picture ?? null;
 
     if (!firebaseUid || !email) {
       throw new Error("Firebase token missing subject or email");
@@ -42,46 +86,93 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Find or create the Supabase user for this email.
-    let userId: string | null = null;
-    {
-      const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-      if (error) throw error;
-      const match = list.users.find((u) => (u.email ?? "").toLowerCase() === email.toLowerCase());
-      if (match) userId = match.id;
+    // Prefer the existing mapping in profiles first.
+    const { data: existingProfile, error: profileLookupError } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("firebase_uid", firebaseUid)
+      .maybeSingle();
+
+    if (profileLookupError) {
+      throw profileLookupError;
     }
+
+    let userId: string | null = existingProfile?.id ?? null;
+
+    // If no profile mapping exists, fall back to auth.users by email.
     if (!userId) {
-      const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: {
-          full_name: name,
-          avatar_url: picture,
-          firebase_uid: firebaseUid,
-          terms_accepted: "true",
-        },
-      });
-      if (error) throw error;
+      userId = await findSupabaseUserByEmail(supabaseAdmin, email);
+    }
+
+    // Create the Supabase user if needed.
+    if (!userId) {
+      const { data: created, error: createError } =
+        await supabaseAdmin.auth.admin.createUser({
+          email,
+          email_confirm: true,
+          user_metadata: {
+            full_name: name,
+            avatar_url: picture,
+            firebase_uid: firebaseUid,
+            terms_accepted: "true",
+          },
+        });
+
+      if (createError) throw createError;
+
       userId = created.user!.id;
     } else {
-      // Keep metadata fresh so handle_new_user-style downstream reads have a name.
-      await supabaseAdmin.auth.admin.updateUserById(userId, {
-        user_metadata: {
+      // Keep auth metadata fresh.
+      const { error: updateAuthError } =
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          user_metadata: {
+            full_name: name,
+            avatar_url: picture,
+            firebase_uid: firebaseUid,
+            terms_accepted: "true",
+          },
+        });
+
+      if (updateAuthError) throw updateAuthError;
+    }
+
+    // Ensure profiles stays in sync. This preserves the handle_new_user trigger
+    // for first-time creation, and updates existing rows on subsequent logins.
+    const { error: profileUpsertError } = await supabaseAdmin
+      .from("profiles")
+      .upsert(
+        {
+          id: userId,
+          firebase_uid: firebaseUid,
           full_name: name,
           avatar_url: picture,
-          firebase_uid: firebaseUid,
         },
-      });
+        {
+          onConflict: "id",
+        },
+      );
+
+    if (profileUpsertError) {
+      throw profileUpsertError;
     }
 
     // Mint a magic-link OTP the client can verify to establish a Supabase session.
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-    });
-    if (linkError) throw linkError;
-    const hashedToken = linkData?.properties?.hashed_token;
-    if (!hashedToken) throw new Error("Failed to mint Supabase session token");
+    const { data: linkData, error: linkError } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+      });
 
-    return { email, tokenHash: hashedToken, emailVerified };
+    if (linkError) throw linkError;
+
+    const hashedToken = linkData?.properties?.hashed_token;
+    if (!hashedToken) {
+      throw new Error("Failed to mint Supabase session token");
+    }
+
+    return {
+      email,
+      tokenHash: hashedToken,
+      emailVerified,
+    };
   });
