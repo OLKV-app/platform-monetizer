@@ -1,3 +1,6 @@
+import { getStorage } from "firebase/storage";
+
+export const storage = getStorage(app);
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
