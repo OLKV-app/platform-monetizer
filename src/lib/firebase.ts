@@ -17,13 +17,13 @@ import {
 } from "firebase/auth";
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyCRFHtpCaaYg1cQXIIFuOE6rWgokZp5_Ho",
-  authDomain: "project-6e03e9ed-73b5-4bf4-816.firebaseapp.com",
-  projectId: "project-6e03e9ed-73b5-4bf4-816",
-  storageBucket: "project-6e03e9ed-73b5-4bf4-816.firebasestorage.app",
-  messagingSenderId: "574188400487",
-  appId: "1:574188400487:web:11a0b6f64c775adc0f09c2",
-  measurementId: "G-9ZDH0TRWNG",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase only once
