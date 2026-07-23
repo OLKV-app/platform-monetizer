@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { uploadFile } from "@/lib/storage";
 import {
   Select,
   SelectContent,
@@ -108,28 +109,24 @@ function Sell() {
       if (error || !listing) throw error;
 
       const uploads = await Promise.all(
-        files.map(async (file, index) => {
-          const ext = file.name.split(".").pop() || "jpg";
+  files.map(async (file, index) => {
+    const ext = file.name.split(".").pop() || "jpg";
 
-          const path = `${user.id}/${listing.id}/${Date.now()}-${index}.${ext}`;
+    const filename = `${user.id}/${listing.id}/${Date.now()}-${index}.${ext}`;
 
-          const { error: uploadError } = await supabase.storage
-            .from("listing-images")
-            .upload(path, file, {
-              cacheControl: "3600",
-            });
+    const url = await uploadFile(
+      "listing-images",
+      filename,
+      file
+    );
 
-          if (uploadError) throw uploadError;
-
-          const url = supabase.storage.from("listing-images").getPublicUrl(path).data.publicUrl;
-
-          return {
-            listing_id: listing.id,
-            url,
-            position: index,
-          };
-        }),
-      );
+    return {
+      listing_id: listing.id,
+      url,
+      position: index,
+    };
+  }),
+);
 
       const { error: imageError } = await supabase.from("listing_images").insert(uploads);
 
