@@ -1,3 +1,5 @@
+import type { SettableMetadata } from "firebase/storage";
+
 /**
  * Universal Upload Engine
  * -----------------------
@@ -25,19 +27,28 @@ export interface UploadUser {
 }
 
 export interface UploadRequest {
+  /**
+   * Upload category.
+   */
   type: UploadType;
 
+  /**
+   * Current authenticated user.
+   */
   user: UploadUser;
 
+  /**
+   * Original file selected by the user.
+   */
   file: File;
 
   /**
-   * Required for listing images
+   * Required for listing images.
    */
   listingId?: string;
 
   /**
-   * Required for chat images
+   * Required for chat images.
    */
   chatId?: string;
 
@@ -84,32 +95,76 @@ export interface ProcessedImage {
 }
 
 export interface UploadResult {
+  /**
+   * Firebase download URL.
+   */
   url: string;
 
-  storagePath: string;
+  /**
+   * Firebase Storage path.
+   */
+  path: string;
 
-  downloadUrl: string;
+  /**
+   * Metadata stored with the uploaded object.
+   */
+  metadata: SettableMetadata;
 
+  /**
+   * Final uploaded image width.
+   */
   width: number;
 
+  /**
+   * Final uploaded image height.
+   */
   height: number;
 
+  /**
+   * Final uploaded file size.
+   */
   size: number;
 
+  /**
+   * Uploaded MIME type.
+   */
   mimeType: string;
 }
 
 export interface UploadProgress {
-  stage:
-    | "validating"
-    | "processing"
-    | "compressing"
-    | "uploading"
-    | "complete";
+  /**
+   * Uploaded bytes.
+   */
+  bytesTransferred: number;
 
-  progress: number;
+  /**
+   * Total bytes.
+   */
+  totalBytes: number;
+
+  /**
+   * Progress percentage (0-100).
+   */
+  percentage: number;
+
+  /**
+   * Firebase upload state.
+   */
+  state: "running" | "paused" | "success";
 }
 
 export type UploadProgressCallback = (
-  progress: UploadProgress
+  progress: UploadProgress,
 ) => void;
+
+export interface UploadController {
+  /**
+   * Upload promise.
+   */
+  promise: Promise<UploadResult>;
+
+  /**
+   * Cancel the upload.
+   */
+  cancel: () => void;
+}
