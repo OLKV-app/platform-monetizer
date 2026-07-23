@@ -1,4 +1,7 @@
-import type { SettableMetadata } from "firebase/storage";
+import type {
+  SettableMetadata,
+  TaskState,
+} from "firebase/storage";
 
 /**
  * Universal Upload Engine
@@ -66,31 +69,20 @@ export interface UploadRequest {
 
 export interface UploadProfile {
   maxWidth: number;
-
   maxHeight: number;
-
   maxFileSize: number;
-
   quality: number;
-
   format: "image/webp" | "image/jpeg";
-
   cropSquare: boolean;
-
   generateThumbnail: boolean;
-
   allowedMimeTypes: string[];
 }
 
 export interface ProcessedImage {
   blob: Blob;
-
   width: number;
-
   height: number;
-
   size: number;
-
   mimeType: string;
 }
 
@@ -150,7 +142,7 @@ export interface UploadProgress {
   /**
    * Firebase upload state.
    */
-  state: "running" | "paused" | "success";
+  state: TaskState;
 }
 
 export type UploadProgressCallback = (
