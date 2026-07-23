@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadFile } from "@/lib/storage";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -52,15 +53,26 @@ function EditProfile() {
   }
 
   async function uploadAvatar(file: File) {
-    if (!user) return;
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-    if (error) return toast.error(error.message);
-    const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
-    setForm((f) => ({ ...f, avatar_url: url }));
-  }
+  if (!user) return;
 
+  try {
+    const ext = file.name.split(".").pop() || "jpg";
+    const filename = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+    const url = await uploadFile(
+      "avatars",
+      filename,
+      file
+    );
+
+    setForm((f) => ({
+      ...f,
+      avatar_url: url,
+    }));
+  } catch (err: any) {
+    toast.error(err?.message ?? "Failed to upload avatar");
+  }
+}
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar subtitle={t("edit_profile")} />
