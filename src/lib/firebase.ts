@@ -1,7 +1,5 @@
-import { getStorage } from "firebase/storage";
-
-export const storage = getStorage(app);
 import { initializeApp, getApps, getApp } from "firebase/app";
+import { getStorage } from "firebase/storage";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -25,12 +23,20 @@ export const firebaseConfig = {
   storageBucket: "project-6e03e9ed-73b5-4bf4-816.firebasestorage.app",
   messagingSenderId: "574188400487",
   appId: "1:574188400487:web:11a0b6f64c775adc0f09c2",
-  measurementId: "G-9ZDH0TRWNG"
+  measurementId: "G-9ZDH0TRWNG",
 };
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize Firebase only once
+const app = !getApps().length
+  ? initializeApp(firebaseConfig)
+  : getApp();
+
+// Firebase Services
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
+// Re-export Firebase Auth helpers
 export {
   signInWithPopup,
   signInWithEmailAndPassword,
