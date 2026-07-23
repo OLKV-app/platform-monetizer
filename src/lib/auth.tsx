@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { auth, onAuthStateChanged, firebaseSignOut, type FirebaseUser } from "@/lib/firebase";
 import { supabase } from "@/integrations/supabase/client";
-// Import your server function here! Adjust the path as needed.
-import { bridgeFirebaseSession } from "@/path/to/your/firebase-bridge.functions"; 
+import { bridgeFirebaseSession } from "@/lib/firebase-bridge.functions";
 
 export interface AuthUser {
   id: string; // This will now be the Supabase UUID
