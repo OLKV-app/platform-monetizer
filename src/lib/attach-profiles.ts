@@ -26,7 +26,7 @@ export async function fetchProfilesByIds(ids: Array<string | null | undefined>) 
     console.error("[fetchProfilesByIds]", error);
     return map;
   }
-  for (const p of data ?? []) map.set(p.id, p as ProfileLite);
+  for (const p of data ?? []) if (p.id) map.set(p.id, p as ProfileLite);
   return map;
 }
 
