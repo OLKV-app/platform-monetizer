@@ -19,11 +19,8 @@ export function buildStoragePath(request: UploadRequest): string {
       return `users/${user.uid}/avatar/avatar.webp`;
 
     case "listing": {
-      if (!request.listingId) {
-        throw new Error("Listing uploads require listingId.");
-      }
-
-      return `users/${user.uid}/listings/${request.listingId}/${generateFilename()}`;
+      const listingId = request.listingId || crypto.randomUUID();
+      return `users/${user.uid}/listings/${listingId}/${generateFilename()}`;
     }
 
     case "banner":
@@ -33,11 +30,8 @@ export function buildStoragePath(request: UploadRequest): string {
       return `users/${user.uid}/receipts/${generateFilename()}`;
 
     case "chat": {
-      if (!request.chatId) {
-        throw new Error("Chat uploads require chatId.");
-      }
-
-      return `users/${user.uid}/chats/${request.chatId}/${generateFilename()}`;
+      const chatId = request.chatId || crypto.randomUUID();
+      return `users/${user.uid}/chats/${chatId}/${generateFilename()}`;
     }
 
     case "review":
