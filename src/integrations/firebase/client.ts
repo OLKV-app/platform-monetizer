@@ -1,29 +1,42 @@
-// Firebase web client init re-exported from centralized firebase config.
+// Firebase web client init. `apiKey` is a PUBLIC identifier, not a secret.
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
-  app as firebaseApp,
-  auth as firebaseAuth,
-  storage,
-  googleProvider,
+  getAuth,
+  GoogleAuthProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  firebaseSignOut as fbSignOut,
-  onAuthStateChanged as onIdTokenChanged,
-  type FirebaseUser,
-} from "@/lib/firebase";
+  confirmPasswordReset,
+  updateProfile,
+  signOut as fbSignOut,
+  onIdTokenChanged,
+  type User as FirebaseUser,
+} from "firebase/auth";
+
+// Use environment variables from .env file
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+};
+
+export const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+export const firebaseAuth = getAuth(firebaseApp);
+export const googleProvider = new GoogleAuthProvider();
 
 export {
-  firebaseApp,
-  firebaseAuth,
-  storage,
-  googleProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  confirmPasswordReset,
+  updateProfile,
   fbSignOut,
   onIdTokenChanged,
 };
-
 export type { FirebaseUser };
