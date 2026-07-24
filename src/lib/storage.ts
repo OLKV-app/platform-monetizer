@@ -1,43 +1,88 @@
-import { storage } from "./firebase";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
+import { uploadImage } from "@/services/upload";
+import { getAuth } from "firebase/auth";
 
 /**
- * Upload a file to Firebase Storage and return its download URL.
+ * Legacy compatibility wrapper.
+ *
+ * Existing calls like:
+ *
+ * uploadFile("listing-images", filename, file)
+ *
+ * are automatically routed through the new upload engine.
  */
 export async function uploadFile(
   folder: string,
   filename: string,
-  file: File
+  file: File,
 ): Promise<string> {
-  const storageRef = ref(storage, `${folder}/${filename}`);
+  const auth = getAuth();
+  const firebaseUser = auth.currentUser;
 
-  await uploadBytes(storageRef, file);
+  if (!firebaseUser) {
+    throw new Error("You must be signed in.");
+  }
 
-  return await getDownloadURL(storageRef);
+  let type:
+    | "avatar"
+    | "listing"
+    | "banner"
+    | "receipt"
+    | "chat"
+    | "review";
+
+  let listingId: string | undefined;
+  let chatId: string | undefined;
+
+  switch (folder) {
+    case "listing-images":
+      type = "listing";
+      listingId = filename.split("/")[1];
+      break;
+
+    case "avatars":
+      type = "avatar";
+      break;
+
+    case "banners":
+      type = "banner";
+      break;
+
+    case "receipts":
+      type = "receipt";
+      break;
+
+    case "chat":
+      type = "chat";
+      chatId = filename.split("/")[1];
+      break;
+
+    case "reviews":
+      type = "review";
+      break;
+
+    default:
+      throw new Error(`Unsupported upload folder: ${folder}`);
+  }
+
+  const result = await uploadImage({
+    type,
+    file,
+    listingId,
+    chatId,
+    user: {
+      uid: firebaseUser.uid,
+      id: "", // Supabase UUID if available
+    },
+  });
+
+  return result.url;
 }
 
-/**
- * Delete a file from Firebase Storage.
- */
 export async function deleteFile(
-  folder: string,
-  filename: string
+  _folder: string,
+  _filename: string,
 ): Promise<void> {
-  const storageRef = ref(storage, `${folder}/${filename}`);
-  await deleteObject(storageRef);
-}
-
-/**
- * Build a storage path.
- */
-export function getStoragePath(
-  folder: string,
-  filename: string
-): string {
-  return `${folder}/${filename}`;
+  throw new Error(
+    "Use the centralized upload service for file deletion.",
+  );
 }
