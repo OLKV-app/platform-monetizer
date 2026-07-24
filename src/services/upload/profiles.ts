@@ -8,10 +8,10 @@ const MB = 1024 * 1024;
 
 export const uploadProfiles: Record<UploadType, UploadProfile> = {
   avatar: {
-    maxWidth: 512,
-    maxHeight: 512,
+    maxWidth: 400,
+    maxHeight: 400,
     maxFileSize: 2 * MB,
-    quality: 0.8,
+    quality: 0.7, // Reduced from 0.8
     format: "image/webp",
     cropSquare: true,
     generateThumbnail: false,
@@ -23,10 +23,10 @@ export const uploadProfiles: Record<UploadType, UploadProfile> = {
   },
 
   listing: {
-    maxWidth: 1920,
-    maxHeight: 1920,
+    maxWidth: 1600, // Reduced from 1920
+    maxHeight: 1600, // Reduced from 1920
     maxFileSize: 10 * MB,
-    quality: 0.85,
+    quality: 0.75, // Reduced from 0.85
     format: "image/webp",
     cropSquare: false,
     generateThumbnail: true,
@@ -38,10 +38,10 @@ export const uploadProfiles: Record<UploadType, UploadProfile> = {
   },
 
   banner: {
-    maxWidth: 1920,
-    maxHeight: 1080,
+    maxWidth: 1600, // Reduced from 1920
+    maxHeight: 900, // Reduced from 1080
     maxFileSize: 8 * MB,
-    quality: 0.85,
+    quality: 0.75, // Reduced from 0.85
     format: "image/webp",
     cropSquare: false,
     generateThumbnail: true,
@@ -53,10 +53,10 @@ export const uploadProfiles: Record<UploadType, UploadProfile> = {
   },
 
   receipt: {
-    maxWidth: 1600,
-    maxHeight: 1600,
+    maxWidth: 1400, // Reduced from 1600
+    maxHeight: 1400, // Reduced from 1600
     maxFileSize: 5 * MB,
-    quality: 0.8,
+    quality: 0.7, // Reduced from 0.8
     format: "image/webp",
     cropSquare: false,
     generateThumbnail: false,
@@ -68,10 +68,10 @@ export const uploadProfiles: Record<UploadType, UploadProfile> = {
   },
 
   chat: {
-    maxWidth: 1280,
-    maxHeight: 1280,
+    maxWidth: 1200, // Reduced from 1280
+    maxHeight: 1200, // Reduced from 1280
     maxFileSize: 5 * MB,
-    quality: 0.8,
+    quality: 0.7, // Reduced from 0.8
     format: "image/webp",
     cropSquare: false,
     generateThumbnail: false,
@@ -83,10 +83,10 @@ export const uploadProfiles: Record<UploadType, UploadProfile> = {
   },
 
   review: {
-    maxWidth: 1280,
-    maxHeight: 1280,
+    maxWidth: 1200, // Reduced from 1280
+    maxHeight: 1200, // Reduced from 1280
     maxFileSize: 5 * MB,
-    quality: 0.8,
+    quality: 0.7, // Reduced from 0.8
     format: "image/webp",
     cropSquare: false,
     generateThumbnail: false,
