@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,30 +21,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { X, Upload } from "lucide-react";
+import { X, Upload, Loader2, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sell")({
   component: Sell,
 });
 
 const schema = z.object({
-  title: z.string().trim().min(4).max(120),
-  description: z.string().trim().min(10).max(4000),
-  price: z.coerce.number().min(0).max(100000000),
-  category_slug: z.string().min(1),
+  title: z.string().trim().min(4, "Title must be at least 4 characters").max(120),
+  description: z.string().trim().min(10, "Description must be at least 10 characters").max(4000),
+  price: z.coerce.number().min(0, "Price must be 0 or greater").max(100000000),
+  category_slug: z.string().min(1, "Please select a category"),
   condition: z.enum(["new", "used"]),
-  island: z.string().min(1),
+  island: z.string().min(1, "Please select an island"),
   location: z.string().max(120).optional(),
-  contact_number: z.string().trim().min(6).max(20),
+  contact_number: z.string().trim().min(6, "Contact number is required").max(20),
 });
 
 function Sell() {
   const { user } = useAuth();
   const nav = useNavigate();
+  const qc = useQueryClient();
   const { t } = useLang();
 
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
+  const [failed, setFailed] = useState(false);
 
   const { data: cats = [] } = useQuery({
     queryKey: ["categories"],
@@ -66,9 +69,7 @@ function Sell() {
 
   function addFiles(list: FileList | null) {
     if (!list) return;
-
     const arr = Array.from(list).filter((f) => f.type.startsWith("image/"));
-
     setFiles((prev) => [...prev, ...arr].slice(0, 10));
   }
 
@@ -84,63 +85,99 @@ function Sell() {
       return toast.error(parsed.error.issues[0].message);
     }
 
-    if (!user) return;
+    if (!user) {
+      return toast.error("You must be logged in to publish a listing");
+    }
 
     if (files.length === 0) {
       return toast.error("Add at least one photo");
     }
 
     setBusy(true);
+    setFailed(false);
+    setUploadStatus("Preparing listing upload...");
+
+    const listingId = crypto.randomUUID();
 
     try {
-      const { data: listing, error } = await supabase
-        .from("listings")
-        .insert({
-          ...parsed.data,
-          user_id: user.id,
+      // 1. Upload Images to Firebase Storage FIRST
+      const uploads: { listing_id: string; url: string; position: number }[] = [];
 
-          // Publish instantly — no admin approval gate for normal users.
-          // NOTE: the listing_status enum only allows pending/approved/rejected/sold.
-          status: "approved",
-        })
-        .select("id")
-        .maybeSingle();
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const filename = `${listingId}/${Date.now()}-${i}.webp`;
 
-      if (error || !listing) throw error;
+        setUploadStatus(`Uploading image ${i + 1} of ${files.length}...`);
 
-      const uploads = await Promise.all(
-  files.map(async (file, index) => {
-    const filename = `${Date.now()}-${index}.webp`;
+        const url = await uploadFile({
+          type: "listing",
+          user: { uid: user.uid, id: user.id },
+          listingId,
+          file,
+          filename,
+          onProgress: (progress) => {
+            setUploadStatus(
+              `Uploading image ${i + 1} of ${files.length} (${progress.percentage}%)...`,
+            );
+          },
+        });
 
-    const url = await uploadFile({
-      type: "listing",
-      user,
-      listingId: listing.id,
-      file,
-      filename,
-    });
+        uploads.push({
+          listing_id: listingId,
+          url,
+          position: i,
+        });
+      }
 
-    return {
-      listing_id: listing.id,
-      url,
-      position: index,
-    };
-  }),
-);
+      // 2. Create Database Record
+      setUploadStatus("Saving listing details...");
+
+      const { error: listingError } = await supabase.from("listings").insert({
+        id: listingId,
+        user_id: user.id,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        price: parsed.data.price,
+        category_slug: parsed.data.category_slug,
+        condition: parsed.data.condition,
+        island: parsed.data.island,
+        location: parsed.data.location || null,
+        contact_number: parsed.data.contact_number,
+        status: "approved",
+      });
+
+      if (listingError) throw listingError;
+
+      // 3. Save Image URLs
+      setUploadStatus("Attaching images to listing...");
 
       const { error: imageError } = await supabase.from("listing_images").insert(uploads);
 
       if (imageError) throw imageError;
 
+      // 4. Refresh Cache
+      setUploadStatus("Finalizing...");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["listings"] }),
+        qc.invalidateQueries({ queryKey: ["my-ads"] }),
+        qc.invalidateQueries({ queryKey: ["recent-listings"] }),
+        qc.invalidateQueries({ queryKey: ["featured-listings"] }),
+      ]);
+
+      // 5. Success Message & Navigation
       toast.success("Your listing has been published successfully.");
 
       nav({
-        to: "/my-ads",
+        to: "/product/$id",
+        params: { id: listingId },
       });
     } catch (err: any) {
-      toast.error(err?.message ?? "Could not publish listing.");
+      console.error("Failed to publish listing:", err);
+      setFailed(true);
+      toast.error(err?.message ?? "Could not publish listing. Please try again.");
     } finally {
       setBusy(false);
+      setUploadStatus("");
     }
   }
 
@@ -354,11 +391,30 @@ function Sell() {
             />
           </div>
 
+          {busy && (
+            <div className="flex items-center justify-center gap-2 rounded-lg bg-muted p-3 text-sm text-foreground">
+              <Loader2 className="size-4 animate-spin text-primary" />
+              <span>{uploadStatus || "Processing..."}</span>
+            </div>
+          )}
+
           <Button type="submit" disabled={busy} className="w-full">
-            {busy ? "Publishing..." : t("publish")}
+            {busy ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                Publishing...
+              </span>
+            ) : failed ? (
+              <span className="flex items-center gap-2">
+                <RefreshCw className="size-4" />
+                Retry Submission
+              </span>
+            ) : (
+              t("publish")
+            )}
           </Button>
 
-          <p className="text-center text-xs text-green-600">
+          <p className="text-center text-xs text-muted-foreground">
             Your listing will be published immediately after submission.
           </p>
         </form>
