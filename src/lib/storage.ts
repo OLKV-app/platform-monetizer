@@ -10,79 +10,126 @@ import { getAuth } from "firebase/auth";
  *
  * are automatically routed through the new upload engine.
  */
+export interface LegacyUploadOptions {
+  folder?: string;
+  type?: "avatar" | "listing" | "banner" | "receipt" | "chat" | "review";
+  user?: { uid: string; id?: string } | null;
+  listingId?: string;
+  chatId?: string;
+  file?: File;
+  filename?: string;
+  onProgress?: (progress: {
+    percentage: number;
+    bytesTransferred: number;
+    totalBytes: number;
+  }) => void;
+}
+
+/**
+ * Universal compatibility wrapper for file uploads.
+ *
+ * Supports both:
+ * 1. uploadFile("listing-images", filename, file)
+ * 2. uploadFile({ type: "listing", user, listingId, file, filename, onProgress })
+ */
 export async function uploadFile(
-  folder: string,
-  filename: string,
-  file: File,
+  folderOrOptions: string | LegacyUploadOptions,
+  filenameArg?: string,
+  fileArg?: File,
 ): Promise<string> {
   const auth = getAuth();
   const firebaseUser = auth.currentUser;
 
-  if (!firebaseUser) {
-    throw new Error("You must be signed in.");
-  }
-
-  let type:
-    | "avatar"
-    | "listing"
-    | "banner"
-    | "receipt"
-    | "chat"
-    | "review";
-
+  let type: "avatar" | "listing" | "banner" | "receipt" | "chat" | "review" = "listing";
   let listingId: string | undefined;
   let chatId: string | undefined;
+  let file: File | undefined;
+  let userObject = firebaseUser ? { uid: firebaseUser.uid, id: "" } : null;
+  let onProgressCallback: ((progress: any) => void) | undefined;
 
-  switch (folder) {
-    case "listing-images":
-      type = "listing";
-      listingId = filename.split("/")[1];
-      break;
+  if (typeof folderOrOptions === "object" && folderOrOptions !== null) {
+    const opts = folderOrOptions;
+    file = opts.file;
+    type = opts.type ?? "listing";
+    listingId = opts.listingId;
+    chatId = opts.chatId;
+    onProgressCallback = opts.onProgress;
 
-    case "avatars":
-      type = "avatar";
-      break;
+    if (opts.user?.uid) {
+      userObject = { uid: opts.user.uid, id: opts.user.id || "" };
+    }
+  } else {
+    const folder = folderOrOptions;
+    const filename = filenameArg ?? "";
+    file = fileArg;
 
-    case "banners":
-      type = "banner";
-      break;
+    switch (folder) {
+      case "listing-images":
+      case "listings":
+      case "listing":
+        type = "listing";
+        if (filename.includes("/")) {
+          listingId = filename.split("/")[0];
+        } else if (filename) {
+          listingId = filename;
+        }
+        break;
 
-    case "receipts":
-      type = "receipt";
-      break;
+      case "avatars":
+      case "avatar":
+        type = "avatar";
+        break;
 
-    case "chat":
-      type = "chat";
-      chatId = filename.split("/")[1];
-      break;
+      case "banners":
+      case "banner":
+        type = "banner";
+        break;
 
-    case "reviews":
-      type = "review";
-      break;
+      case "receipts":
+      case "receipt":
+        type = "receipt";
+        break;
 
-    default:
-      throw new Error(`Unsupported upload folder: ${folder}`);
+      case "chat":
+      case "chats":
+        type = "chat";
+        if (filename.includes("/")) {
+          chatId = filename.split("/")[0];
+        }
+        break;
+
+      case "reviews":
+      case "review":
+        type = "review";
+        break;
+
+      default:
+        throw new Error(`Unsupported upload folder: ${folder}`);
+    }
   }
 
-  const result = await uploadImage({
-    type,
-    file,
-    listingId,
-    chatId,
-    user: {
-      uid: firebaseUser.uid,
-      id: "", // Supabase UUID if available
+  if (!file) {
+    throw new Error("No file selected for upload.");
+  }
+
+  if (!userObject) {
+    throw new Error("You must be signed in to upload files.");
+  }
+
+  const result = await uploadImage(
+    {
+      type,
+      file,
+      listingId,
+      chatId,
+      user: userObject,
     },
-  });
+    onProgressCallback,
+  );
 
   return result.url;
 }
 
-export async function deleteFile(
-  _folder: string,
-  _filename: string,
-): Promise<void> {
-  throw new Error(
-    "Use the centralized upload service for file deletion.",
-  );
+export async function deleteFile(_folder: string, _filename: string): Promise<void> {
+  throw new Error("Use the centralized upload service for file deletion.");
 }
