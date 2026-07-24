@@ -26,9 +26,7 @@ export const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 // Initialize Firebase only once
-const app = !getApps().length
-  ? initializeApp(firebaseConfig)
-  : getApp();
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Firebase Services
 export const auth = getAuth(app);
