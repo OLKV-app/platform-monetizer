@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { uploadFile } from "@/lib/storage";
+import { uploadImage } from "@/services/upload";
 import {
   Select,
   SelectContent,
@@ -20,34 +20,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { X, Upload, Loader2, RefreshCw } from "lucide-react";
+import { X, Upload, CheckCircle2, XCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sell")({
   component: Sell,
 });
 
 const schema = z.object({
-  title: z.string().trim().min(4, "Title must be at least 4 characters").max(120),
-  description: z.string().trim().min(10, "Description must be at least 10 characters").max(4000),
-  price: z.coerce.number().min(0, "Price must be 0 or greater").max(100000000),
-  category_slug: z.string().min(1, "Please select a category"),
+  title: z.string().trim().min(4).max(120),
+  description: z.string().trim().min(10).max(4000),
+  price: z.coerce.number().min(0).max(100000000),
+  category_slug: z.string().min(1),
   condition: z.enum(["new", "used"]),
-  island: z.string().min(1, "Please select an island"),
+  island: z.string().min(1),
   location: z.string().max(120).optional(),
-  contact_number: z.string().trim().min(6, "Contact number is required").max(20),
+  contact_number: z.string().trim().min(6).max(20),
 });
 
 function Sell() {
   const { user } = useAuth();
   const nav = useNavigate();
-  const qc = useQueryClient();
   const { t } = useLang();
 
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string>("");
-  const [failed, setFailed] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const { data: cats = [] } = useQuery({
     queryKey: ["categories"],
@@ -69,11 +78,13 @@ function Sell() {
 
   function addFiles(list: FileList | null) {
     if (!list) return;
+
     const arr = Array.from(list).filter((f) => f.type.startsWith("image/"));
+
     setFiles((prev) => [...prev, ...arr].slice(0, 10));
   }
 
-  async function submit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const parsed = schema.safeParse({
@@ -85,99 +96,110 @@ function Sell() {
       return toast.error(parsed.error.issues[0].message);
     }
 
-    if (!user) {
-      return toast.error("You must be logged in to publish a listing");
-    }
+    if (!user) return;
 
     if (files.length === 0) {
       return toast.error("Add at least one photo");
     }
 
-    setBusy(true);
-    setFailed(false);
-    setUploadStatus("Preparing listing upload...");
+    // Show confirmation dialog
+    setShowConfirmDialog(true);
+  }
 
-    const listingId = crypto.randomUUID();
+  async function confirmPublish() {
+    setShowConfirmDialog(false);
+    setBusy(true);
+    setUploadProgress(0);
+
+    const toastId = toast.loading("Publishing your listing...", {
+      description: "Compressing and uploading images",
+    });
 
     try {
-      // 1. Upload Images to Firebase Storage FIRST
-      const uploads: { listing_id: string; url: string; position: number }[] = [];
+      // Create listing first
+      const { data: listing, error } = await supabase
+        .from("listings")
+        .insert({
+          ...schema.parse({ ...form, price: form.price }),
+          user_id: user.id,
+          status: "approved",
+        })
+        .select("id")
+        .maybeSingle();
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const filename = `${listingId}/${Date.now()}-${i}.webp`;
+      if (error || !listing) throw error;
 
-        setUploadStatus(`Uploading image ${i + 1} of ${files.length}...`);
-
-        const url = await uploadFile({
-          type: "listing",
-          user: { uid: user.uid, id: user.id },
-          listingId,
-          file,
-          filename,
-          onProgress: (progress) => {
-            setUploadStatus(
-              `Uploading image ${i + 1} of ${files.length} (${progress.percentage}%)...`,
+      // Upload images with progress tracking
+      const totalFiles = files.length;
+      const uploads = await Promise.all(
+        files.map(async (file, index) => {
+          try {
+            const result = await uploadImage(
+              {
+                type: "listing",
+                file,
+                listingId: listing.id,
+                user: {
+                  uid: user.id,
+                  id: user.id,
+                },
+              },
+              (progress) => {
+                // Update progress
+                const fileProgress = ((index + progress.percentage / 100) / totalFiles) * 100;
+                setUploadProgress(Math.round(fileProgress));
+              }
             );
-          },
-        });
 
-        uploads.push({
-          listing_id: listingId,
-          url,
-          position: i,
-        });
-      }
+            return {
+              listing_id: listing.id,
+              url: result.url,
+              position: index,
+            };
+          } catch (error) {
+            console.error(`Failed to upload image ${index}:`, error);
+            throw error;
+          }
+        })
+      );
 
-      // 2. Create Database Record
-      setUploadStatus("Saving listing details...");
-
-      const { error: listingError } = await supabase.from("listings").insert({
-        id: listingId,
-        user_id: user.id,
-        title: parsed.data.title,
-        description: parsed.data.description,
-        price: parsed.data.price,
-        category_slug: parsed.data.category_slug,
-        condition: parsed.data.condition,
-        island: parsed.data.island,
-        location: parsed.data.location || null,
-        contact_number: parsed.data.contact_number,
-        status: "approved",
-      });
-
-      if (listingError) throw listingError;
-
-      // 3. Save Image URLs
-      setUploadStatus("Attaching images to listing...");
-
+      // Save image records to database
       const { error: imageError } = await supabase.from("listing_images").insert(uploads);
 
       if (imageError) throw imageError;
 
-      // 4. Refresh Cache
-      setUploadStatus("Finalizing...");
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ["listings"] }),
-        qc.invalidateQueries({ queryKey: ["my-ads"] }),
-        qc.invalidateQueries({ queryKey: ["recent-listings"] }),
-        qc.invalidateQueries({ queryKey: ["featured-listings"] }),
-      ]);
-
-      // 5. Success Message & Navigation
-      toast.success("Your listing has been published successfully.");
-
-      nav({
-        to: "/product/$id",
-        params: { id: listingId },
+      // Success toast with action button
+      toast.success("Listing published successfully!", {
+        id: toastId,
+        description: `${files.length} images compressed and uploaded`,
+        icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+        action: {
+          label: "View Listing",
+          onClick: () => nav({ to: "/my-ads" }),
+        },
+        duration: 5000,
       });
+
+      // Navigate after short delay
+      setTimeout(() => {
+        nav({ to: "/my-ads" });
+      }, 1000);
     } catch (err: any) {
-      console.error("Failed to publish listing:", err);
-      setFailed(true);
-      toast.error(err?.message ?? "Could not publish listing. Please try again.");
+      console.error("Publication error:", err);
+      
+      toast.error("Failed to publish listing", {
+        id: toastId,
+        description: err?.message ?? "Please try again",
+        icon: <XCircle className="h-5 w-5 text-red-500" />,
+        action: {
+          label: "Retry",
+          onClick: () => confirmPublish(),
+        },
+        duration: 7000,
+      });
     } finally {
       setBusy(false);
-      setUploadStatus("");
+      setUploadProgress(0);
     }
   }
 
@@ -188,7 +210,7 @@ function Sell() {
       <main className="mx-auto max-w-[430px] space-y-4 px-4 pt-4">
         <h1 className="font-heading text-2xl font-bold">Post a Listing</h1>
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label>{t("photos")}</Label>
 
@@ -224,6 +246,12 @@ function Sell() {
                 </label>
               )}
             </div>
+            
+            {files.length > 0 && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {files.length} image{files.length !== 1 ? 's' : ''} selected (will be compressed)
+              </p>
+            )}
           </div>
 
           <div>
@@ -391,34 +419,50 @@ function Sell() {
             />
           </div>
 
-          {busy && (
-            <div className="flex items-center justify-center gap-2 rounded-lg bg-muted p-3 text-sm text-foreground">
-              <Loader2 className="size-4 animate-spin text-primary" />
-              <span>{uploadStatus || "Processing..."}</span>
-            </div>
-          )}
-
           <Button type="submit" disabled={busy} className="w-full">
             {busy ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="size-4 animate-spin" />
-                Publishing...
-              </span>
-            ) : failed ? (
-              <span className="flex items-center gap-2">
-                <RefreshCw className="size-4" />
-                Retry Submission
-              </span>
+              <>
+                Publishing... {uploadProgress > 0 && `${uploadProgress}%`}
+              </>
             ) : (
               t("publish")
             )}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            Your listing will be published immediately after submission.
+            ✓ Images will be automatically compressed before upload
+            <br />
+            ✓ Your listing will be published immediately
           </p>
         </form>
       </main>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ready to publish?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Please review your listing before publishing:</p>
+              <ul className="list-inside list-disc space-y-1 text-sm">
+                <li><strong>{form.title}</strong></li>
+                <li>Price: {form.price}</li>
+                <li>{files.length} photo{files.length !== 1 ? 's' : ''}</li>
+                <li>Category: {cats.find(c => c.slug === form.category_slug)?.name_en}</li>
+              </ul>
+              <p className="mt-2 text-xs text-green-600">
+                Images will be compressed and optimized automatically.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPublish} disabled={busy}>
+              Confirm & Publish
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>
