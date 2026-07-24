@@ -6,30 +6,30 @@ export type ProfileLite = {
   avatar_url: string | null;
   phone: string | null;
   island: string | null;
-  is_banned: boolean | null;
-  ban_reason: string | null;
+  is_banned?: boolean | null;
+  ban_reason?: string | null;
 };
 
 /**
- * Fetch profiles for a set of user ids. Returns a Map keyed by id.
- * All fields optional / nullable; caller picks what it needs.
+ * Fetch public profile fields for a set of user ids. Returns a Map keyed by id.
+ * Reads the `profiles_public` view (safe columns only, respects hide_contact).
  */
 export async function fetchProfilesByIds(ids: Array<string | null | undefined>) {
   const uniq = Array.from(new Set(ids.filter((x): x is string => !!x)));
   const map = new Map<string, ProfileLite>();
   if (uniq.length === 0) return map;
   const { data, error } = await supabase
-    .from("profiles")
-    .select("id, full_name, avatar_url, phone, island, is_banned, ban_reason")
+    .from("profiles_public")
+    .select("id, full_name, avatar_url, phone, island")
     .in("id", uniq);
   if (error) {
-    // Surface in dev, but don't blow up UI.
     console.error("[fetchProfilesByIds]", error);
     return map;
   }
   for (const p of data ?? []) map.set(p.id, p as ProfileLite);
   return map;
 }
+
 
 /**
  * Attach a `profiles` field to each row using the given key.
