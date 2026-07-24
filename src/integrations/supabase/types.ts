@@ -1143,24 +1143,30 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           full_name: string | null
+          hide_contact: boolean | null
           id: string | null
           island: string | null
+          phone: string | null
           verified_seller: boolean | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
           full_name?: string | null
+          hide_contact?: boolean | null
           id?: string | null
           island?: string | null
+          phone?: never
           verified_seller?: boolean | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string | null
           full_name?: string | null
+          hide_contact?: boolean | null
           id?: string | null
           island?: string | null
+          phone?: never
           verified_seller?: boolean | null
         }
         Relationships: []

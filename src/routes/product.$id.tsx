@@ -54,10 +54,11 @@ function Product() {
       }
       if (!listing) return null;
       const { data: seller, error: pErr } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, full_name, avatar_url, phone, island, hide_contact")
         .eq("id", listing.user_id)
         .maybeSingle();
+
       if (pErr) console.error("[product seller]", pErr);
       return { ...listing, profiles: seller ?? null } as any;
     },
