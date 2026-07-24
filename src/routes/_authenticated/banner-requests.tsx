@@ -2,15 +2,26 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadFile } from "@/lib/storage";
+import { uploadImage } from "@/services/upload";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/banner-requests")({
   component: BannerRequestsPage,
@@ -31,6 +42,8 @@ function BannerRequestsPage() {
   const [form, setForm] = useState({ ...empty });
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const { data = [] } = useQuery({
     queryKey: ["my-banner-requests", user?.id],
@@ -45,9 +58,7 @@ function BannerRequestsPage() {
       ).data ?? [],
   });
 
-  async function submit() {
-    if (!user) return;
-
+  function handleSubmitClick() {
     if (!file) {
       return toast.error("Upload a banner image");
     }
@@ -56,19 +67,38 @@ function BannerRequestsPage() {
       return toast.error("Title required");
     }
 
+    // Show confirmation dialog
+    setShowConfirmDialog(true);
+  }
+
+  async function confirmSubmit() {
+    if (!user) return;
+    
+    setShowConfirmDialog(false);
     setBusy(true);
+    setUploadProgress(0);
+
+    const toastId = toast.loading("Submitting banner request...", {
+      description: "Compressing and uploading banner image",
+    });
 
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-
-      const filename = `${user.id}/requests/${Date.now()}.${ext}`;
-
-      const image_url = await uploadFile(
-        "banners",
-        filename,
-        file
+      // Upload the banner image with compression
+      const result = await uploadImage(
+        {
+          type: "banner",
+          file: file!,
+          user: {
+            uid: user.id,
+            id: user.id,
+          },
+        },
+        (progress) => {
+          setUploadProgress(progress.percentage);
+        }
       );
 
+      // Insert banner request
       const { error } = await supabase.from("banner_requests").insert({
         user_id: user.id,
         title: form.title,
@@ -76,13 +106,19 @@ function BannerRequestsPage() {
         link_url: form.link_url,
         duration_days: Number(form.duration_days),
         notes: form.notes,
-        image_url,
+        image_url: result.url,
       });
 
       if (error) throw error;
 
-      toast.success("Request submitted for review");
+      toast.success("Banner request submitted!", {
+        id: toastId,
+        description: "Our team will review it shortly",
+        icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+        duration: 5000,
+      });
 
+      // Reset form
       setForm({ ...empty });
       setFile(null);
 
@@ -90,9 +126,21 @@ function BannerRequestsPage() {
         queryKey: ["my-banner-requests"],
       });
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to submit request");
+      console.error("Banner submission error:", err);
+      
+      toast.error("Failed to submit banner request", {
+        id: toastId,
+        description: err?.message ?? "Please try again",
+        icon: <XCircle className="h-5 w-5 text-red-500" />,
+        action: {
+          label: "Retry",
+          onClick: () => confirmSubmit(),
+        },
+        duration: 7000,
+      });
     } finally {
       setBusy(false);
+      setUploadProgress(0);
     }
   }
 
@@ -188,15 +236,30 @@ function BannerRequestsPage() {
                 setFile(e.target.files?.[0] ?? null)
               }
             />
+            {file && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Selected: {file.name} (will be compressed)
+              </p>
+            )}
           </div>
 
           <Button
-            onClick={submit}
+            onClick={handleSubmitClick}
             disabled={busy}
             className="w-full"
           >
-            {busy ? "Submitting…" : "Submit request"}
+            {busy ? (
+              <>
+                Submitting... {uploadProgress > 0 && `${uploadProgress}%`}
+              </>
+            ) : (
+              "Submit request"
+            )}
           </Button>
+          
+          <p className="text-center text-xs text-muted-foreground">
+            ✓ Image will be automatically compressed
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -246,6 +309,35 @@ function BannerRequestsPage() {
           ))}
         </div>
       </main>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit banner request?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Please review your banner request:</p>
+              <ul className="list-inside list-disc space-y-1 text-sm">
+                <li><strong>{form.title}</strong></li>
+                <li>Duration: {form.duration_days} days</li>
+                {form.link_url && <li>Link: {form.link_url}</li>}
+              </ul>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Your banner will be reviewed by our team before going live.
+              </p>
+              <p className="text-xs text-green-600">
+                Image will be compressed and optimized automatically.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSubmit} disabled={busy}>
+              Confirm & Submit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>
