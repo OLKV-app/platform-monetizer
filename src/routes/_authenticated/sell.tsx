@@ -110,15 +110,15 @@ function Sell() {
 
       const uploads = await Promise.all(
   files.map(async (file, index) => {
-    const ext = file.name.split(".").pop() || "jpg";
+    const filename = `${Date.now()}-${index}.webp`;
 
-    const filename = `${user.id}/${listing.id}/${Date.now()}-${index}.${ext}`;
-
-    const url = await uploadFile(
-      "listing-images",
+    const url = await uploadFile({
+      type: "listing",
+      user,
+      listingId: listing.id,
+      file,
       filename,
-      file
-    );
+    });
 
     return {
       listing_id: listing.id,
