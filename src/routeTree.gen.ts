@@ -39,7 +39,6 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminAdsRouteImport } from './routes/_authenticated/admin.ads'
 import { Route as AuthenticatedAdminAppealsRouteImport } from './routes/_authenticated/admin.appeals'
 import { Route as AuthenticatedAdminBannerRequestsRouteImport } from './routes/_authenticated/admin.banner-requests'
-import { Route as AuthenticatedAdminBannersRouteImport } from './routes/_authenticated/admin.banners'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin.categories'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated/admin.feedback'
 import { Route as AuthenticatedAdminLegalRouteImport } from './routes/_authenticated/admin.legal'
@@ -209,12 +208,6 @@ const AuthenticatedAdminBannerRequestsRoute =
     path: '/banner-requests',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
-const AuthenticatedAdminBannersRoute =
-  AuthenticatedAdminBannersRouteImport.update({
-    id: '/banners',
-    path: '/banners',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
 const AuthenticatedAdminCategoriesRoute =
   AuthenticatedAdminCategoriesRouteImport.update({
     id: '/categories',
@@ -312,7 +305,6 @@ export interface FileRoutesByFullPath {
   '/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/admin/appeals': typeof AuthenticatedAdminAppealsRoute
   '/admin/banner-requests': typeof AuthenticatedAdminBannerRequestsRoute
-  '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
@@ -355,7 +347,6 @@ export interface FileRoutesByTo {
   '/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/admin/appeals': typeof AuthenticatedAdminAppealsRoute
   '/admin/banner-requests': typeof AuthenticatedAdminBannerRequestsRoute
-  '/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/legal': typeof AuthenticatedAdminLegalRoute
@@ -401,7 +392,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/_authenticated/admin/appeals': typeof AuthenticatedAdminAppealsRoute
   '/_authenticated/admin/banner-requests': typeof AuthenticatedAdminBannerRequestsRoute
-  '/_authenticated/admin/banners': typeof AuthenticatedAdminBannersRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/_authenticated/admin/legal': typeof AuthenticatedAdminLegalRoute
@@ -447,7 +437,6 @@ export interface FileRouteTypes {
     | '/admin/ads'
     | '/admin/appeals'
     | '/admin/banner-requests'
-    | '/admin/banners'
     | '/admin/categories'
     | '/admin/feedback'
     | '/admin/legal'
@@ -490,7 +479,6 @@ export interface FileRouteTypes {
     | '/admin/ads'
     | '/admin/appeals'
     | '/admin/banner-requests'
-    | '/admin/banners'
     | '/admin/categories'
     | '/admin/feedback'
     | '/admin/legal'
@@ -535,7 +523,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ads'
     | '/_authenticated/admin/appeals'
     | '/_authenticated/admin/banner-requests'
-    | '/_authenticated/admin/banners'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/feedback'
     | '/_authenticated/admin/legal'
@@ -777,13 +764,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBannerRequestsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/_authenticated/admin/banners': {
-      id: '/_authenticated/admin/banners'
-      path: '/banners'
-      fullPath: '/admin/banners'
-      preLoaderRoute: typeof AuthenticatedAdminBannersRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
     '/_authenticated/admin/categories': {
       id: '/_authenticated/admin/categories'
       path: '/categories'
@@ -875,7 +855,6 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAdsRoute: typeof AuthenticatedAdminAdsRoute
   AuthenticatedAdminAppealsRoute: typeof AuthenticatedAdminAppealsRoute
   AuthenticatedAdminBannerRequestsRoute: typeof AuthenticatedAdminBannerRequestsRoute
-  AuthenticatedAdminBannersRoute: typeof AuthenticatedAdminBannersRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
   AuthenticatedAdminLegalRoute: typeof AuthenticatedAdminLegalRoute
@@ -893,7 +872,6 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAdsRoute: AuthenticatedAdminAdsRoute,
   AuthenticatedAdminAppealsRoute: AuthenticatedAdminAppealsRoute,
   AuthenticatedAdminBannerRequestsRoute: AuthenticatedAdminBannerRequestsRoute,
-  AuthenticatedAdminBannersRoute: AuthenticatedAdminBannersRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
   AuthenticatedAdminLegalRoute: AuthenticatedAdminLegalRoute,
