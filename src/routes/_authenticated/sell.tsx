@@ -141,7 +141,7 @@ function Sell() {
                 file,
                 listingId: listing.id,
                 user: {
-                  uid: user.id,
+                  uid: user.uid,
                   id: user.id,
                 },
               },
