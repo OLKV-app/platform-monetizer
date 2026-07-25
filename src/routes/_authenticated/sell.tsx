@@ -108,6 +108,7 @@ function Sell() {
 
   async function confirmPublish() {
     setShowConfirmDialog(false);
+    if (!user) return toast.error("You must be signed in");
     setBusy(true);
     setUploadProgress(0);
 
