@@ -21,6 +21,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedBannerRequestsRouteImport } from './routes/_authenticated/banner-requests'
 import { Route as AuthenticatedBusinessRouteImport } from './routes/_authenticated/business'
+import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_authenticated/complete-profile'
 import { Route as AuthenticatedEditProfileRouteImport } from './routes/_authenticated/edit-profile'
 import { Route as AuthenticatedFavouritesRouteImport } from './routes/_authenticated/favourites'
 import { Route as AuthenticatedFeedbackRouteImport } from './routes/_authenticated/feedback'
@@ -113,6 +114,12 @@ const AuthenticatedBusinessRoute = AuthenticatedBusinessRouteImport.update({
   path: '/business',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCompleteProfileRoute =
+  AuthenticatedCompleteProfileRouteImport.update({
+    id: '/complete-profile',
+    path: '/complete-profile',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedEditProfileRoute =
   AuthenticatedEditProfileRouteImport.update({
     id: '/edit-profile',
@@ -295,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/banner-requests': typeof AuthenticatedBannerRequestsRoute
   '/business': typeof AuthenticatedBusinessRoute
+  '/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/edit-profile': typeof AuthenticatedEditProfileRoute
   '/favourites': typeof AuthenticatedFavouritesRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
@@ -338,6 +346,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/banner-requests': typeof AuthenticatedBannerRequestsRoute
   '/business': typeof AuthenticatedBusinessRoute
+  '/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/edit-profile': typeof AuthenticatedEditProfileRoute
   '/favourites': typeof AuthenticatedFavouritesRoute
   '/feedback': typeof AuthenticatedFeedbackRoute
@@ -384,6 +393,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/banner-requests': typeof AuthenticatedBannerRequestsRoute
   '/_authenticated/business': typeof AuthenticatedBusinessRoute
+  '/_authenticated/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/_authenticated/edit-profile': typeof AuthenticatedEditProfileRoute
   '/_authenticated/favourites': typeof AuthenticatedFavouritesRoute
   '/_authenticated/feedback': typeof AuthenticatedFeedbackRoute
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/banner-requests'
     | '/business'
+    | '/complete-profile'
     | '/edit-profile'
     | '/favourites'
     | '/feedback'
@@ -473,6 +484,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/banner-requests'
     | '/business'
+    | '/complete-profile'
     | '/edit-profile'
     | '/favourites'
     | '/feedback'
@@ -518,6 +530,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/banner-requests'
     | '/_authenticated/business'
+    | '/_authenticated/complete-profile'
     | '/_authenticated/edit-profile'
     | '/_authenticated/favourites'
     | '/_authenticated/feedback'
@@ -649,6 +662,13 @@ declare module '@tanstack/react-router' {
       path: '/business'
       fullPath: '/business'
       preLoaderRoute: typeof AuthenticatedBusinessRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/complete-profile': {
+      id: '/_authenticated/complete-profile'
+      path: '/complete-profile'
+      fullPath: '/complete-profile'
+      preLoaderRoute: typeof AuthenticatedCompleteProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/edit-profile': {
@@ -914,6 +934,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedBannerRequestsRoute: typeof AuthenticatedBannerRequestsRoute
   AuthenticatedBusinessRoute: typeof AuthenticatedBusinessRoute
+  AuthenticatedCompleteProfileRoute: typeof AuthenticatedCompleteProfileRoute
   AuthenticatedEditProfileRoute: typeof AuthenticatedEditProfileRoute
   AuthenticatedFavouritesRoute: typeof AuthenticatedFavouritesRoute
   AuthenticatedFeedbackRoute: typeof AuthenticatedFeedbackRoute
@@ -934,6 +955,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedBannerRequestsRoute: AuthenticatedBannerRequestsRoute,
   AuthenticatedBusinessRoute: AuthenticatedBusinessRoute,
+  AuthenticatedCompleteProfileRoute: AuthenticatedCompleteProfileRoute,
   AuthenticatedEditProfileRoute: AuthenticatedEditProfileRoute,
   AuthenticatedFavouritesRoute: AuthenticatedFavouritesRoute,
   AuthenticatedFeedbackRoute: AuthenticatedFeedbackRoute,
