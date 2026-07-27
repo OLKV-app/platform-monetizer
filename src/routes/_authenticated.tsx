@@ -14,24 +14,22 @@ export const Route = createFileRoute("/_authenticated")({
     // Block banned users from every protected page except the appeal page
     if (!location.pathname.startsWith("/banned")) {
       try {
-        // Get the Supabase UUID from the session to query profiles
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user?.id) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("is_banned")
+            .select("is_banned, full_name")
             .eq("id", session.user.id)
             .maybeSingle();
           if (profile?.is_banned) throw redirect({ to: "/banned" });
+          const needsProfile = !profile?.full_name || profile.full_name.trim() === "";
+          if (needsProfile && !location.pathname.startsWith("/complete-profile")) {
+            throw redirect({ to: "/complete-profile" });
+          }
         }
       } catch (error) {
-        // Log errors for debugging, but don't fail the redirect
-        // loadStatus() in useAuth() will check ban status on page load
-        if (error instanceof Error && 'location' in error) {
-          // This is a redirect, re-throw it
-          throw error;
-        }
-        console.error("[_authenticated beforeLoad] Failed to check ban status:", error);
+        if (error instanceof Error && 'location' in error) throw error;
+        console.error("[_authenticated beforeLoad] Failed to check profile status:", error);
       }
     }
   },
