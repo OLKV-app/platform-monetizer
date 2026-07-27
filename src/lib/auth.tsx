@@ -20,6 +20,7 @@ interface Ctx {
   isAdmin: boolean;
   isBanned: boolean;
   banReason: string | null;
+  needsProfile: boolean;
   signOut: () => Promise<void>;
   refreshStatus: () => Promise<void>;
 }
@@ -32,6 +33,7 @@ const AuthContext = createContext<Ctx>({
   isAdmin: false,
   isBanned: false,
   banReason: null,
+  needsProfile: false,
   signOut: async () => {},
   refreshStatus: async () => {},
 });
@@ -43,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [banReason, setBanReason] = useState<string | null>(null);
+  const [needsProfile, setNeedsProfile] = useState(false);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
@@ -68,14 +72,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (error) {
               console.error("Supabase OTP verification failed:", error);
             } else if (data.user) {
-              // 4. Save the Supabase UUID to state!
               setSupabaseUuid(data.user.id);
+              setNeedsProfile(!!bridgeResult.needsProfile);
             }
           }
         } catch (err) {
           console.error("Bridge session failed:", err);
         }
       } else {
+        setSupabaseUuid(null);
+        setNeedsProfile(false);
+        await supabase.auth.signOut();
+      }
         // User logged out of Firebase
         setSupabaseUuid(null);
         await supabase.auth.signOut();
