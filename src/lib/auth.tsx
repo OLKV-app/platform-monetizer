@@ -84,10 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setNeedsProfile(false);
         await supabase.auth.signOut();
       }
-        // User logged out of Firebase
-        setSupabaseUuid(null);
-        await supabase.auth.signOut();
-      }
+
       setLoading(false);
     });
     return () => unsubscribe();
@@ -148,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isBanned,
         banReason,
+        needsProfile,
         signOut,
         refreshStatus,
       }}
