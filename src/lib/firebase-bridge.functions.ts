@@ -136,7 +136,13 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
 
     // 4) Upsert profile row. For phone-only users on first sign-in we leave
     //    full_name null so the client can route to onboarding.
-    const profilePayload: Record<string, unknown> = {
+    const profilePayload: {
+      id: string;
+      firebase_uid: string;
+      full_name?: string;
+      avatar_url?: string;
+      phone?: string;
+    } = {
       id: userId,
       firebase_uid: firebaseUid,
     };
