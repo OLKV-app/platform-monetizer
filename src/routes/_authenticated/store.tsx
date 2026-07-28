@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/lib/auth";
-import { charge } from "@/lib/payments";
+import { razorpayCheckout } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { formatINR } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -31,13 +32,31 @@ function Store() {
     }),
   });
 
+  const [buying, setBuying] = useState<string | null>(null);
+
   async function buyPlan(plan: any) {
     if (!user) return;
+    setBuying(plan.id);
     try {
-      const txn = await charge({ userId: user.id, amount: Number(plan.price), purpose: plan.tier === "ad_free" ? "ad_free" : "subscription", meta: { plan_code: plan.code } });
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, phone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const txn = await razorpayCheckout({
+        userId: user.id,
+        amount: Number(plan.price),
+        purpose: plan.tier === "ad_free" ? "ad_free" : "subscription",
+        planName: plan.name,
+        planId: plan.id,
+        customerName: profile?.full_name ?? undefined,
+        customerPhone: profile?.phone ?? undefined,
+      });
+
       const expiry = new Date(Date.now() + plan.duration_days * 86400_000).toISOString();
       const { error } = await supabase.from("subscriptions").insert({
-        user_id: user.id, plan_id: plan.id, transaction_id: txn.id, expiry_date: expiry, status: "active",
+        user_id: user.id, plan_id: plan.id, transaction_id: txn.txnId, expiry_date: expiry, status: "active",
       });
       if (error) throw error;
       const patch: any = { subscription_tier: plan.tier };
@@ -47,6 +66,8 @@ function Store() {
       qc.invalidateQueries();
     } catch (e: any) {
       toast.error(e.message ?? "Purchase failed");
+    } finally {
+      setBuying(null);
     }
   }
 
@@ -73,7 +94,7 @@ function Store() {
                     </div>
                     <div className="mt-1 text-2xl font-bold text-primary">{p.price > 0 ? formatINR(p.price) : "Free"}<span className="text-xs font-normal text-muted-foreground"> / {p.duration_days}d</span></div>
                   </div>
-                  {p.price > 0 && <Button size="sm" onClick={() => buyPlan(p)}>Buy</Button>}
+                  {p.price > 0 && <Button size="sm" onClick={() => buyPlan(p)} disabled={buying === p.id}>{buying === p.id ? "…" : "Buy"}</Button>}
                 </div>
                 <ul className="mt-3 space-y-1.5">
                   {(p.benefits ?? []).map((b: string, i: number) => (

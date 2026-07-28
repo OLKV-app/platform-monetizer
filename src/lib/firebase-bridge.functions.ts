@@ -104,6 +104,18 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
       userId = await findSupabaseUserByEmail(supabaseAdmin, email);
     }
 
+    // 2b) For phone-only users, fall back to a profile lookup by phone number.
+    //     This lets a returning user sign in from a new Firebase project / fresh
+    //     install and still load their existing profile, keyed by phone.
+    if (!userId && isPhoneOnly && phoneNumber) {
+      const { data: phoneProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name")
+        .eq("phone", phoneNumber)
+        .maybeSingle();
+      if (phoneProfile?.id) userId = phoneProfile.id;
+    }
+
     // 3) Create auth user if still not found.
     if (!userId) {
       const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
