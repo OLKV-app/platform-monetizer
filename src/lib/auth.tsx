@@ -127,12 +127,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabaseUuid]);
 
   const refreshStatus = async () => {
-    if (supabaseUuid) await loadStatus(supabaseUuid);
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut(); // Sign out of Supabase
-    await firebaseSignOut(auth);   // Sign out of Firebase
+    if (!supabaseUuid) return;
+    await loadStatus(supabaseUuid);
+    // Also re-check whether profile is now complete
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", supabaseUuid)
+      .maybeSingle();
+    setNeedsProfile(!profile?.full_name || profile.full_name.trim() === "");
   };
 
   return (
