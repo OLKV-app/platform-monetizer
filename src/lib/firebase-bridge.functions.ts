@@ -146,19 +146,25 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
       if (updateAuthError) throw updateAuthError;
     }
 
-    // 4) Upsert profile row. For phone-only users on first sign-in we leave
-    //    full_name null so the client can route to onboarding.
+        // 4) Upsert profile row.
+    // Track whether this is a brand-new user so we can explicitly null-out
+    // full_name for phone-only sign-ups (overriding the trigger default).
+    const isNewUser = !existingProfile?.id && !userId;
+
     const profilePayload: {
       id: string;
       firebase_uid: string;
-      full_name?: string;
-      avatar_url?: string;
-      phone?: string;
+      full_name?: string | null;
+      avatar_url?: string | null;
+      phone?: string | null;
     } = {
       id: userId,
       firebase_uid: firebaseUid,
     };
+
     if (name) profilePayload.full_name = name;
+    else if (isNewUser) profilePayload.full_name = null; // <-- KEY FIX
+
     if (picture) profilePayload.avatar_url = picture;
     if (phoneNumber) profilePayload.phone = phoneNumber;
 
