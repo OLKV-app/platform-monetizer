@@ -105,8 +105,6 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
     }
 
     // 2b) For phone-only users, fall back to a profile lookup by phone number.
-    //     This lets a returning user sign in from a new Firebase project / fresh
-    //     install and still load their existing profile, keyed by phone.
     if (!userId && isPhoneOnly && phoneNumber) {
       const { data: phoneProfile } = await supabaseAdmin
         .from("profiles")
@@ -117,6 +115,9 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
     }
 
     // 3) Create auth user if still not found.
+    // Track whether this is a brand-new user BEFORE we assign userId.
+    const isNewUser = !userId;
+
     if (!userId) {
       const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -146,11 +147,10 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
       if (updateAuthError) throw updateAuthError;
     }
 
-        // 4) Upsert profile row.
-    // Track whether this is a brand-new user so we can explicitly null-out
-    // full_name for phone-only sign-ups (overriding the trigger default).
-    const isNewUser = !existingProfile?.id && !userId;
-
+    // 4) Upsert profile row.
+    // For brand-new phone-only users we explicitly null-out full_name so the
+    // trigger's split_part(email,'@',1) default is overridden and the client
+    // correctly routes to /complete-profile.
     const profilePayload: {
       id: string;
       firebase_uid: string;
@@ -163,7 +163,7 @@ export const bridgeFirebaseSession = createServerFn({ method: "POST" })
     };
 
     if (name) profilePayload.full_name = name;
-    else if (isNewUser) profilePayload.full_name = null; // <-- KEY FIX
+    else if (isNewUser) profilePayload.full_name = null;
 
     if (picture) profilePayload.avatar_url = picture;
     if (phoneNumber) profilePayload.phone = phoneNumber;
