@@ -1,11 +1,14 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { auth, onAuthStateChanged, firebaseSignOut, type FirebaseUser } from "@/lib/firebase";
-import { supabase } from "@/integrations/supabase/client";
-import { bridgeFirebaseSession } from "@/lib/firebase-bridge.functions";
+import {
+  getProfileFromFirestore,
+  saveProfileToFirestore,
+  getUserRoleFromFirestore,
+} from "@/lib/firestore";
 
 export interface AuthUser {
-  id: string; // This will now be the Supabase UUID
-  uid: string; // This stays as the Firebase UID
+  id: string; // Firebase UID
+  uid: string; // Firebase UID
   email: string | null;
   phone: string | null;
   displayName: string | null;
@@ -20,7 +23,6 @@ interface Ctx {
   isAdmin: boolean;
   isBanned: boolean;
   banReason: string | null;
-  needsProfile: boolean;
   signOut: () => Promise<void>;
   refreshStatus: () => Promise<void>;
 }
@@ -33,67 +35,49 @@ const AuthContext = createContext<Ctx>({
   isAdmin: false,
   isBanned: false,
   banReason: null,
-  needsProfile: false,
   signOut: async () => {},
   refreshStatus: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [supabaseUuid, setSupabaseUuid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [banReason, setBanReason] = useState<string | null>(null);
-  const [needsProfile, setNeedsProfile] = useState(false);
-
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
       setFirebaseUser(fUser);
 
       if (fUser) {
+        // Sync Firestore profile for phone/email
         try {
-          // 1. Get Firebase Token
-          const idToken = await fUser.getIdToken();
-
-          // 2. Call your Server Bridge function
-          const bridgeResult = await bridgeFirebaseSession({
-            data: { idToken, fullName: fUser.displayName || undefined },
+          await getProfileFromFirestore(fUser.uid, {
+            phone: fUser.phoneNumber,
+            email: fUser.email,
           });
-
-          // 3. Verify OTP to establish Supabase session
-          if (bridgeResult?.tokenHash) {
-            const { data, error } = await supabase.auth.verifyOtp({
-              type: 'magiclink',
-              token_hash: bridgeResult.tokenHash,
+          if (fUser.phoneNumber || fUser.email || fUser.displayName || fUser.photoURL) {
+            await saveProfileToFirestore(fUser.uid, {
+              ...(fUser.phoneNumber ? { phone: fUser.phoneNumber } : {}),
+              ...(fUser.email ? { email: fUser.email } : {}),
+              ...(fUser.displayName ? { full_name: fUser.displayName } : {}),
+              ...(fUser.photoURL ? { avatar_url: fUser.photoURL } : {}),
             });
-
-            if (error) {
-              console.error("Supabase OTP verification failed:", error);
-            } else if (data.user) {
-              setSupabaseUuid(data.user.id);
-              setNeedsProfile(!!bridgeResult.needsProfile);
-            }
           }
-        } catch (err) {
-          console.error("Bridge session failed:", err);
+        } catch (fsErr) {
+          console.warn("Firestore profile sync error:", fsErr);
         }
-      } else {
-        setSupabaseUuid(null);
-        setNeedsProfile(false);
-        await supabase.auth.signOut();
       }
-
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  const normalizedUser: AuthUser | null = (firebaseUser && supabaseUuid)
+  const normalizedUser: AuthUser | null = firebaseUser
     ? {
-        id: supabaseUuid, // <--- FIX: Use Supabase UUID for database queries
-        uid: firebaseUser.uid, // Keep Firebase UID if you need it for Firebase queries
+        id: firebaseUser.uid,
+        uid: firebaseUser.uid,
         email: firebaseUser.email,
         phone: firebaseUser.phoneNumber,
         displayName: firebaseUser.displayName,
@@ -101,14 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     : null;
 
-  async function loadStatus(uuid: string) {
+  async function loadStatus(uid: string) {
     try {
-      // Now 'uuid' is a proper UUID, so these queries will work!
-      const [{ data: role }, { data: profile }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", uuid).eq("role", "admin").maybeSingle(),
-        supabase.from("profiles").select("is_banned,ban_reason").eq("id", uuid).maybeSingle(),
+      const [role, profile] = await Promise.all([
+        getUserRoleFromFirestore(uid),
+        getProfileFromFirestore(uid),
       ]);
-      setIsAdmin(!!role);
+      setIsAdmin(role === "admin" || profile?.is_admin === true);
       setIsBanned(!!profile?.is_banned);
       setBanReason(profile?.ban_reason ?? null);
     } catch (err) {
@@ -117,38 +100,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    if (!supabaseUuid) {
+    if (!firebaseUser?.uid) {
       setIsAdmin(false);
       setIsBanned(false);
       setBanReason(null);
       return;
     }
-    loadStatus(supabaseUuid);
-  }, [supabaseUuid]);
-
-  const signOut = async () => {
-    try {
-      await firebaseSignOut(auth);
-    } finally {
-      await supabase.auth.signOut();
-      setSupabaseUuid(null);
-      setNeedsProfile(false);
-      setIsAdmin(false);
-      setIsBanned(false);
-      setBanReason(null);
-    }
-  };
+    loadStatus(firebaseUser.uid);
+  }, [firebaseUser]);
 
   const refreshStatus = async () => {
-    if (!supabaseUuid) return;
-    await loadStatus(supabaseUuid);
-    // Also re-check whether profile is now complete
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", supabaseUuid)
-      .maybeSingle();
-    setNeedsProfile(!profile?.full_name || profile.full_name.trim() === "");
+    if (firebaseUser?.uid) await loadStatus(firebaseUser.uid);
+  };
+
+  const signOut = async () => {
+    await firebaseSignOut(auth);
   };
 
   return (
@@ -161,7 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isBanned,
         banReason,
-        needsProfile,
         signOut,
         refreshStatus,
       }}
@@ -173,4 +138,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+export async function getCurrentAuthUser(): Promise<AuthUser | null> {
+  return new Promise((resolve) => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      unsub();
+      if (!u) return resolve(null);
+      resolve({
+        id: u.uid,
+        uid: u.uid,
+        email: u.email,
+        phone: u.phoneNumber,
+        displayName: u.displayName,
+        photoURL: u.photoURL,
+      });
+    });
+  });
 }
