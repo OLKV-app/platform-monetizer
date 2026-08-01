@@ -69,8 +69,8 @@ export async function razorpayCheckout(input: RazorpayCheckoutInput): Promise<Ra
   await loadRazorpayScript();
   if (!window.Razorpay) throw new Error("Razorpay checkout unavailable");
 
-  const { data: session } = await supabase.auth.getSession();
-  const accessToken = session?.access_token;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
   if (!accessToken) throw new Error("Not authenticated");
 
   // 1. Create order server-side

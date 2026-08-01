@@ -126,6 +126,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadStatus(supabaseUuid);
   }, [supabaseUuid]);
 
+  const signOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+    } finally {
+      await supabase.auth.signOut();
+      setSupabaseUuid(null);
+      setNeedsProfile(false);
+      setIsAdmin(false);
+      setIsBanned(false);
+      setBanReason(null);
+    }
+  };
+
   const refreshStatus = async () => {
     if (!supabaseUuid) return;
     await loadStatus(supabaseUuid);
