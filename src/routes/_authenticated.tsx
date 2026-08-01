@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, isRedirect } from "@tanstack/react-router";
 import { auth } from "@/lib/firebase";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalNotificationListener } from "@/components/GlobalNotificationListener";
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated")({
           }
         }
       } catch (error) {
-        if (error instanceof Error && 'location' in error) throw error;
+        if (isRedirect(error)) throw error;
         console.error("[_authenticated beforeLoad] Failed to check profile status:", error);
       }
     }

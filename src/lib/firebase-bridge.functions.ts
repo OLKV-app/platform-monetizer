@@ -55,7 +55,7 @@ async function findSupabaseUserByEmail(
 }
 
 export const bridgeFirebaseSession = createServerFn({ method: "POST" })
-  .validator(bridgeFirebaseSessionSchema)
+  .inputValidator(bridgeFirebaseSessionSchema)
   .handler(async ({ data }) => {
     const { jwtVerify, createRemoteJWKSet } = await import("jose");
     const JWKS = createRemoteJWKSet(new URL(FIREBASE_JWKS_URL));
