@@ -1,0 +1,1 @@
+ALTER FUNCTION private.is_trusted_ctx() SET search_path = private, public;
