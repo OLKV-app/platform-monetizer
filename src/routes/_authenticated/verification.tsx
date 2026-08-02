@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/lib/auth";
-import { charge } from "@/lib/payments";
+import { razorpayCheckout } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
