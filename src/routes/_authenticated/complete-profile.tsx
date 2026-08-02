@@ -49,25 +49,27 @@ function CompleteProfilePage() {
     }
     setBusy(true);
     try {
-      // Firestore is the source of truth for the auth profile guard.
-      await saveProfileToFirestore(user.id, {
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: user.id,
+            full_name: fullName.trim(),
+            island,
+            phone: phone.trim() || null,
+            terms_accepted_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+      if (error) throw error;
+
+      // Best-effort mirror to Firestore (never blocks onboarding).
+      void saveProfileToFirestore(user.id, {
         full_name: fullName.trim(),
         island,
         phone: phone.trim() || null,
         email: firebaseUser?.email ?? null,
-      });
-
-      // Best-effort mirror into the marketplace database.
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: fullName.trim(),
-          island,
-          phone: phone.trim() || null,
-          terms_accepted_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
-      if (error) console.warn("Profile mirror failed:", error.message);
+      }).catch(() => {});
 
       await refreshStatus();
       toast.success("Profile completed!");

@@ -1,10 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { auth, onAuthStateChanged, firebaseSignOut, type FirebaseUser } from "@/lib/firebase";
-import {
-  getProfileFromFirestore,
-  saveProfileToFirestore,
-  getUserRoleFromFirestore,
-} from "@/lib/firestore";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface AuthUser {
   id: string; // Firebase UID
@@ -50,25 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
       setFirebaseUser(fUser);
 
-      if (fUser) {
-        // Sync Firestore profile for phone/email
-        try {
-          await getProfileFromFirestore(fUser.uid, {
-            phone: fUser.phoneNumber,
-            email: fUser.email,
-          });
-          if (fUser.phoneNumber || fUser.email || fUser.displayName || fUser.photoURL) {
-            await saveProfileToFirestore(fUser.uid, {
-              ...(fUser.phoneNumber ? { phone: fUser.phoneNumber } : {}),
-              ...(fUser.email ? { email: fUser.email } : {}),
-              ...(fUser.displayName ? { full_name: fUser.displayName } : {}),
-              ...(fUser.photoURL ? { avatar_url: fUser.photoURL } : {}),
-            });
-          }
-        } catch (fsErr) {
-          console.warn("Firestore profile sync error:", fsErr);
-        }
-      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -87,11 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loadStatus(uid: string) {
     try {
-      const [role, profile] = await Promise.all([
-        getUserRoleFromFirestore(uid),
-        getProfileFromFirestore(uid),
+      const [{ data: roleRow }, { data: profile }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle(),
+        supabase.from("profiles").select("is_banned, ban_reason").eq("id", uid).maybeSingle(),
       ]);
-      setIsAdmin(role === "admin" || profile?.is_admin === true);
+      setIsAdmin(!!roleRow);
       setIsBanned(!!profile?.is_banned);
       setBanReason(profile?.ban_reason ?? null);
     } catch (err) {

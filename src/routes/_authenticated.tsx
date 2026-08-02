@@ -1,11 +1,11 @@
 import { createFileRoute, Outlet, redirect, isRedirect } from "@tanstack/react-router";
 import { auth } from "@/lib/firebase";
-import { getProfileFromFirestore } from "@/lib/firestore";
+import { supabase } from "@/integrations/supabase/client";
 import { GlobalNotificationListener } from "@/components/GlobalNotificationListener";
 
 export const Route = createFileRoute("/_authenticated")({
-  ssr: false,
   beforeLoad: async ({ location }) => {
+    if (typeof window === "undefined") return;
     await auth.authStateReady();
     const user = auth.currentUser;
     if (!user) {
@@ -17,14 +17,15 @@ export const Route = createFileRoute("/_authenticated")({
       !location.pathname.startsWith("/complete-profile")
     ) {
       try {
-        const fsProfile = await getProfileFromFirestore(user.uid, {
-          phone: user.phoneNumber,
-          email: user.email,
-        });
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, island, is_banned")
+          .eq("id", user.uid)
+          .maybeSingle();
 
-        if (fsProfile?.is_banned) throw redirect({ to: "/banned" });
+        if (profile?.is_banned) throw redirect({ to: "/banned" });
 
-        if (!fsProfile?.full_name || !fsProfile?.island) {
+        if (!profile?.full_name || !profile?.island) {
           throw redirect({ to: "/complete-profile" });
         }
       } catch (err) {
