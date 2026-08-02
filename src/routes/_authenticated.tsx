@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, isRedirect } from "@tanstack/react-router";
 import { auth } from "@/lib/firebase";
 import { getProfileFromFirestore } from "@/lib/firestore";
 import { GlobalNotificationListener } from "@/components/GlobalNotificationListener";
