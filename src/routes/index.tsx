@@ -62,9 +62,9 @@ function Home() {
   }, [banners.length]);
 
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background pb-28 md:pb-16">
       <TopBar />
-      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-6 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-6 px-4 pb-4 pt-4 md:space-y-10 md:px-6 md:pt-8">
         <form
           action="/search"
           className="relative"
@@ -145,7 +145,7 @@ function Home() {
         {featured.length > 0 && (
           <section className="space-y-3">
             <h2 className="font-heading text-base font-semibold">{t("featured")}</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
               {featured[0] && (
                 <Link
                   to="/product/$id"
@@ -186,7 +186,7 @@ function Home() {
               No listings yet. Be the first to <Link to="/sell" className="font-semibold text-primary">post one</Link>.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-x-3 gap-y-6">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-4 md:gap-x-5 md:gap-y-8">
               {latest.map((l) => <ProductCard key={l.id} listing={l as any} />)}
             </div>
           )}
