@@ -1,36 +1,31 @@
-import { createFileRoute, Outlet, redirect, isRedirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { auth } from "@/lib/firebase";
-import { supabase } from "@/integrations/supabase/client";
+import { getProfileFromFirestore } from "@/lib/firestore";
 import { GlobalNotificationListener } from "@/components/GlobalNotificationListener";
 
 export const Route = createFileRoute("/_authenticated")({
+  ssr: false,
   beforeLoad: async ({ location }) => {
-    if (typeof window === "undefined") return;
     await auth.authStateReady();
     const user = auth.currentUser;
     if (!user) {
       throw redirect({ to: "/auth", search: { redirect: location.href } });
     }
 
-    if (
-      !location.pathname.startsWith("/banned") &&
-      !location.pathname.startsWith("/complete-profile")
-    ) {
+    if (!location.pathname.startsWith("/banned")) {
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, island, is_banned")
-          .eq("id", user.uid)
-          .maybeSingle();
+        const fsProfile = await getProfileFromFirestore(user.uid, {
+          phone: user.phoneNumber,
+          email: user.email,
+        });
 
-        if (profile?.is_banned) throw redirect({ to: "/banned" });
+        if (fsProfile?.is_banned) throw redirect({ to: "/banned" });
 
-        if (!profile?.full_name || !profile?.island) {
+        if (!fsProfile?.full_name || !fsProfile?.island) {
           throw redirect({ to: "/complete-profile" });
         }
       } catch (err) {
-        if (isRedirect(err) || (err as any)?.to) throw err;
-        console.warn("Profile guard skipped:", err);
+        if ((err as any)?.to) throw err;
       }
     }
   },
