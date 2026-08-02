@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { GlobalNotificationListener } from "@/components/GlobalNotificationListener";
 
 export const Route = createFileRoute("/_authenticated")({
-  ssr: false,
   beforeLoad: async ({ location }) => {
+    if (typeof window === "undefined") return;
     await auth.authStateReady();
     const user = auth.currentUser;
     if (!user) {
