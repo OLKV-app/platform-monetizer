@@ -150,8 +150,9 @@ export async function razorpayCheckout(input: RazorpayCheckoutInput): Promise<Ra
   };
 }
 
-// Legacy stub charge kept for non-Razorpay flows / dev fallback.
-export async function charge(input: ChargeInput) {
+// Creates a PENDING transaction only. Clients can never mark a payment as
+// paid — that transition happens server-side after gateway verification.
+export async function createPendingTransaction(input: ChargeInput) {
   const invoiceNumber = "INV-" + Date.now().toString(36).toUpperCase();
   const { data, error } = await supabase
     .from("transactions")
@@ -159,9 +160,8 @@ export async function charge(input: ChargeInput) {
       user_id: input.userId,
       amount: input.amount,
       currency: input.currency ?? "INR",
-      provider: "stub",
-      provider_ref: invoiceNumber,
-      status: "paid",
+      provider: "razorpay",
+      status: "pending",
       purpose: input.purpose,
       target_id: input.targetId ?? null,
       invoice_number: invoiceNumber,

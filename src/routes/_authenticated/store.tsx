@@ -44,24 +44,19 @@ function Store() {
         .eq("id", user.id)
         .maybeSingle();
 
-      const txn = await razorpayCheckout({
+      await razorpayCheckout({
         userId: user.id,
         amount: Number(plan.price),
         purpose: plan.tier === "ad_free" ? "ad_free" : "subscription",
+        targetId: plan.id,
         planName: plan.name,
         planId: plan.id,
         customerName: profile?.full_name ?? undefined,
         customerPhone: profile?.phone ?? undefined,
       });
 
-      const expiry = new Date(Date.now() + plan.duration_days * 86400_000).toISOString();
-      const { error } = await supabase.from("subscriptions").insert({
-        user_id: user.id, plan_id: plan.id, transaction_id: txn.txnId, expiry_date: expiry, status: "active",
-      });
-      if (error) throw error;
-      const patch: any = { subscription_tier: plan.tier };
-      if (plan.ad_free) patch.ad_free_until = expiry;
-      await supabase.from("profiles").update(patch).eq("id", user.id);
+      // Activation (subscription row, tier, ad-free window) is applied
+      // server-side once the payment is verified as paid.
       toast.success(`${plan.name} activated`);
       qc.invalidateQueries();
     } catch (e: any) {

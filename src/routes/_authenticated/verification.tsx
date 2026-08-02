@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/lib/auth";
-import { charge } from "@/lib/payments";
+import { razorpayCheckout } from "@/lib/payments";
 import { getSetting } from "@/lib/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,8 +38,13 @@ function Verification() {
     try {
       let feeTxnId: string | null = null;
       if ((fee?.price ?? 0) > 0) {
-        const t = await charge({ userId: user.id, amount: fee!.price, purpose: "verification" });
-        feeTxnId = t.id;
+        const t = await razorpayCheckout({
+          userId: user.id,
+          amount: fee!.price,
+          purpose: "verification",
+          planName: "Seller verification fee",
+        });
+        feeTxnId = t.txnId;
       }
       const { error } = await supabase.from("verification_requests").insert({
         user_id: user.id, full_name: form.full_name.trim(), id_document_url: form.id_document_url.trim(),
