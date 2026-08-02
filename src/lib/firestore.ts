@@ -3,6 +3,19 @@ import { app } from "@/lib/firebase";
 
 export const db = getFirestore(app);
 
+/** Firestore may be unprovisioned/offline — never let it block the app. */
+const FS_TIMEOUT_MS = 4000;
+async function withTimeout<T>(p: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await Promise.race([
+      p,
+      new Promise<T>((resolve) => setTimeout(() => resolve(fallback), FS_TIMEOUT_MS)),
+    ]);
+  } catch {
+    return fallback;
+  }
+}
+
 export interface UserProfile {
   uid?: string;
   full_name?: string | null;
