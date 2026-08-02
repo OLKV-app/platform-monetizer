@@ -28,7 +28,8 @@ export const Route = createFileRoute("/_authenticated")({
           throw redirect({ to: "/complete-profile" });
         }
       } catch (err) {
-        if ((err as any)?.to) throw err;
+        if (isRedirect(err) || (err as any)?.to) throw err;
+        console.warn("Profile guard skipped:", err);
       }
     }
   },
