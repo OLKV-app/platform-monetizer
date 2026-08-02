@@ -38,8 +38,13 @@ function Verification() {
     try {
       let feeTxnId: string | null = null;
       if ((fee?.price ?? 0) > 0) {
-        const t = await charge({ userId: user.id, amount: fee!.price, purpose: "verification" });
-        feeTxnId = t.id;
+        const t = await razorpayCheckout({
+          userId: user.id,
+          amount: fee!.price,
+          purpose: "verification",
+          planName: "Seller verification fee",
+        });
+        feeTxnId = t.txnId;
       }
       const { error } = await supabase.from("verification_requests").insert({
         user_id: user.id, full_name: form.full_name.trim(), id_document_url: form.id_document_url.trim(),
