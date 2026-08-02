@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { ShieldAlert, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/banned")({
-  ssr: false,
   component: BannedPage,
 });
 
