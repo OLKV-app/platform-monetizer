@@ -35,7 +35,7 @@ function Favs() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar subtitle={t("favourites")} />
-      <main className="mx-auto max-w-[430px] space-y-4 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-4 px-4 pt-4">
         <h1 className="font-heading text-2xl font-bold">{t("favourites")}</h1>
         {data.length === 0 ? (
           <p className="rounded-2xl bg-surface p-8 text-center text-sm text-muted-foreground ring-1 ring-border">

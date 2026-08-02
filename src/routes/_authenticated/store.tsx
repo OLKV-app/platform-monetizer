@@ -71,7 +71,7 @@ function Store() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar subtitle="Promotion store" />
-      <main className="mx-auto max-w-[430px] space-y-6 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-6 px-4 pt-4">
         <h1 className="font-heading text-2xl font-bold">Store</h1>
 
         <section className="space-y-3">

@@ -68,7 +68,7 @@ function SearchPage() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar subtitle={t("search")} />
-      <main className="mx-auto max-w-[430px] space-y-4 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-4 px-4 pt-4">
         <form
           className="relative"
           onSubmit={(e) => {

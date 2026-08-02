@@ -49,7 +49,7 @@ function FeedbackPage() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar subtitle="Feedback" />
-      <main className="mx-auto max-w-[430px] space-y-4 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-4 px-4 pt-4">
         <h1 className="font-heading text-2xl font-bold">Send feedback</h1>
         <p className="text-sm text-muted-foreground">
           Found a bug, have an idea, or need help? Tell us — an admin will reply here.

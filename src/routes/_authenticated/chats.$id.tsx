@@ -65,7 +65,7 @@ function ChatView() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[430px] items-center gap-3 px-3 py-3">
+        <div className="mx-auto flex max-w-[430px] md:max-w-5xl items-center gap-3 px-3 py-3">
           <Link to="/chats" className="grid size-9 place-items-center rounded-full bg-muted"><ChevronLeft className="size-4" /></Link>
           <div className="size-9 overflow-hidden rounded-full bg-muted">{(other as any)?.avatar_url && <img src={(other as any).avatar_url} className="size-full object-cover" alt="" />}</div>
           <div className="min-w-0 flex-1">
@@ -77,7 +77,7 @@ function ChatView() {
           {img && <img src={img} alt="" className="size-9 rounded-lg object-cover" />}
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-[430px] flex-1 flex-col px-3 py-4">
+      <main className="mx-auto flex w-full max-w-[430px] md:max-w-5xl flex-1 flex-col px-3 py-4">
         <div className="flex-1 space-y-2">
           {messages.map((m: any) => {
             const mine = m.sender_id === user?.id;

@@ -64,7 +64,7 @@ function Home() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar />
-      <main className="mx-auto max-w-[430px] space-y-6 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-6 px-4 pt-4">
         <form
           action="/search"
           className="relative"

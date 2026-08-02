@@ -11,7 +11,7 @@ export function TopBar({ subtitle }: { subtitle?: string }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[430px] items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-[430px] md:max-w-5xl items-center justify-between px-4 py-3">
         
         <Link to="/" className="flex items-center gap-2 leading-none">
           <img
