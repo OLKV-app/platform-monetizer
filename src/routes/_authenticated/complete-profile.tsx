@@ -57,7 +57,6 @@ function CompleteProfilePage() {
             full_name: fullName.trim(),
             island,
             phone: phone.trim() || null,
-            email: firebaseUser?.email ?? null,
             terms_accepted_at: new Date().toISOString(),
           },
           { onConflict: "id" },
