@@ -42,7 +42,7 @@ function Profile() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar subtitle={t("profile")} />
-      <main className="mx-auto max-w-[430px] space-y-4 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-4 px-4 pt-4">
         <section className="rounded-3xl bg-gradient-to-br from-primary to-accent p-5 text-white">
           <div className="flex items-center gap-4">
             <div className="size-16 overflow-hidden rounded-full bg-white/20 ring-2 ring-white/40">

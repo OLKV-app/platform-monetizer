@@ -22,8 +22,11 @@ export function BottomNav() {
   );
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[430px] items-center justify-between px-6 pb-[env(safe-area-inset-bottom)] pt-2">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border/50 bg-background/95 backdrop-blur-xl md:hidden"
+      style={{ transform: "translateZ(0)", willChange: "transform" }}
+    >
+      <div className="mx-auto flex max-w-[430px] items-center justify-between px-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
         {item("/", <Home className="size-5" />, t("home"), pathname === "/")}
         {item("/search", <Search className="size-5" />, t("search"), is("/search"))}
         <div className="-mt-8">

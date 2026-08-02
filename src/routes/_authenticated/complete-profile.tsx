@@ -3,11 +3,23 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { saveProfileToFirestore } from "@/lib/firestore";
+import { ISLANDS } from "@/lib/islands";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/complete-profile")({
+  head: () => ({
+    meta: [
+      { title: "Complete your profile — OLKV" },
+      { name: "description", content: "Add your name and island to start buying and selling on OLKV, Lakshadweep's marketplace." },
+      { property: "og:title", content: "Complete your profile — OLKV" },
+      { property: "og:description", content: "Add your name and island to start buying and selling on OLKV." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: CompleteProfilePage,
 });
 
@@ -16,6 +28,7 @@ function CompleteProfilePage() {
   const nav = useNavigate();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [island, setIsland] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -30,20 +43,35 @@ function CompleteProfilePage() {
       toast.error("Please enter your name");
       return;
     }
+    if (!island) {
+      toast.error("Please select your island");
+      return;
+    }
     setBusy(true);
     try {
+      // Firestore is the source of truth for the auth profile guard.
+      await saveProfileToFirestore(user.id, {
+        full_name: fullName.trim(),
+        island,
+        phone: phone.trim() || null,
+        email: firebaseUser?.email ?? null,
+      });
+
+      // Best-effort mirror into the marketplace database.
       const { error } = await supabase
         .from("profiles")
         .update({
           full_name: fullName.trim(),
+          island,
           phone: phone.trim() || null,
           terms_accepted_at: new Date().toISOString(),
         })
         .eq("id", user.id);
-      if (error) throw error;
+      if (error) console.warn("Profile mirror failed:", error.message);
+
       await refreshStatus();
       toast.success("Profile completed!");
-      nav({ to: "/" });
+      nav({ to: "/", replace: true });
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to save profile");
     } finally {
@@ -69,6 +97,21 @@ function CompleteProfilePage() {
               minLength={2}
               maxLength={80}
             />
+          </div>
+          <div>
+            <Label htmlFor="island">Island</Label>
+            <select
+              id="island"
+              value={island}
+              onChange={(e) => setIsland(e.target.value)}
+              required
+              className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="">Select your island</option>
+              {ISLANDS.map((i) => (
+                <option key={i} value={i}>{i}</option>
+              ))}
+            </select>
           </div>
           <div>
             <Label htmlFor="phone">Phone</Label>

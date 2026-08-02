@@ -37,7 +37,7 @@ function MySub() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar subtitle="My subscription" />
-      <main className="mx-auto max-w-[430px] space-y-4 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-4 px-4 pt-4">
         <h1 className="font-heading text-2xl font-bold">My subscription</h1>
 
         {active ? (

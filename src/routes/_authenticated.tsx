@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, isRedirect } from "@tanstack/react-router";
 import { auth } from "@/lib/firebase";
 import { getProfileFromFirestore } from "@/lib/firestore";
 import { GlobalNotificationListener } from "@/components/GlobalNotificationListener";
@@ -12,7 +12,10 @@ export const Route = createFileRoute("/_authenticated")({
       throw redirect({ to: "/auth", search: { redirect: location.href } });
     }
 
-    if (!location.pathname.startsWith("/banned")) {
+    if (
+      !location.pathname.startsWith("/banned") &&
+      !location.pathname.startsWith("/complete-profile")
+    ) {
       try {
         const fsProfile = await getProfileFromFirestore(user.uid, {
           phone: user.phoneNumber,
@@ -25,7 +28,8 @@ export const Route = createFileRoute("/_authenticated")({
           throw redirect({ to: "/complete-profile" });
         }
       } catch (err) {
-        if ((err as any)?.to) throw err;
+        if (isRedirect(err) || (err as any)?.to) throw err;
+        console.warn("Profile guard skipped:", err);
       }
     }
   },

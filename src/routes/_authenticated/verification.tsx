@@ -67,7 +67,7 @@ function Verification() {
   return (
     <div className="min-h-screen bg-background pb-28">
       <TopBar subtitle="Seller verification" />
-      <main className="mx-auto max-w-[430px] space-y-4 px-4 pt-4">
+      <main className="mx-auto max-w-[430px] md:max-w-5xl space-y-4 px-4 pt-4">
         <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 p-5 ring-1 ring-primary/20">
           <ShieldCheck className="size-6 text-primary" />
           <h1 className="mt-2 font-heading text-xl font-bold">Get verified</h1>
